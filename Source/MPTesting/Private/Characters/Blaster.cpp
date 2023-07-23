@@ -74,6 +74,11 @@ bool ABlaster::IsAiming()
 	return (CombatComponent && CombatComponent->bAiming);
 }
 
+AWeapon* ABlaster::GetEquippedWeapon()
+{
+	return CombatComponent ? CombatComponent->EquippedWeapon : nullptr;
+}
+
 void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
 {
 	if (IsLocallyControlled() && OverlappingWeapon)

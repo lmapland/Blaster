@@ -56,4 +56,5 @@ private:
 	EWeaponState WeaponState = EWeaponState::EWS_Initial;
 
 public:
+	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() { return WeaponMesh; }
 };

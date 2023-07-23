@@ -30,7 +30,7 @@ public:
 	virtual void PostInitializeComponents() override;
 	bool IsWeaponEquipped() const;
 	bool IsAiming();
-
+	AWeapon* GetEquippedWeapon();
 
 protected:
 	virtual void BeginPlay() override;
