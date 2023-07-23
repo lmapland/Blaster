@@ -47,4 +47,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	const float Interp = FMath::FInterpTo(Lean, Target, DeltaTime, 6.f);
 	Lean = FMath::Clamp(Interp, -90.f, 90.f);
 	//UE_LOG(LogTemp, Warning, TEXT("AimRotation Yaw: %f"), AimRotation.Yaw);
+
+	AO_Yaw = Blaster->GetAOYaw();
+	AO_Pitch = Blaster->GetAOPitch();
 }

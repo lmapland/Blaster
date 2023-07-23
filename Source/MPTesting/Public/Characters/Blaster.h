@@ -31,6 +31,7 @@ public:
 	bool IsWeaponEquipped() const;
 	bool IsAiming();
 
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -43,6 +44,7 @@ protected:
 	void AimButtonReleased();
 	//virtual void Crouch(bool bClientSimulation = false) override;
 	void Equip();
+	void AimOffset(float DeltaTime);
 	
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -94,6 +96,11 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	AWeapon* OverlappingWeapon;
 
+	float AO_Yaw = 0.f;
+	float AO_Pitch = 0.f;
+	FRotator StartingAimRotation = FRotator(0.f);
 
 public:
+	FORCEINLINE float GetAOYaw() const { return AO_Yaw; }
+	FORCEINLINE float GetAOPitch() const { return AO_Pitch; }
 };
