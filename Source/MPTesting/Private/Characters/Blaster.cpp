@@ -11,6 +11,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Weapons/Weapon.h"
 #include "BlasterComponents/CombatComponent.h"
+#include "Components/CapsuleComponent.h"
 
 
 ABlaster::ABlaster()
@@ -26,8 +27,13 @@ ABlaster::ABlaster()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 400.f, 0.f);
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 	bUseControllerRotationYaw = false;
@@ -39,7 +45,6 @@ ABlaster::ABlaster()
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	CombatComponent->SetIsReplicated(true);
 
-	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
 void ABlaster::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -61,6 +66,11 @@ void ABlaster::PostInitializeComponents()
 bool ABlaster::IsWeaponEquipped() const
 {
 	return CombatComponent->EquippedWeapon != nullptr;
+}
+
+bool ABlaster::IsAiming()
+{
+	return (CombatComponent && CombatComponent->bAiming);
 }
 
 void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
@@ -135,6 +145,20 @@ void ABlaster::CrouchButtonPressed()
 	}
 }
 
+void ABlaster::AimButtonPressed()
+{
+	check(CombatComponent);
+
+	CombatComponent->SetAiming(true);
+}
+
+void ABlaster::AimButtonReleased()
+{
+	check(CombatComponent);
+
+	CombatComponent->SetAiming(false);
+}
+
 /*void ABlaster::Crouch(bool bClientSimulation)
 {
 }*/
@@ -187,10 +211,13 @@ void ABlaster::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABlaster::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABlaster::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABlaster::Jump);
-		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ABlaster::Equip);
+		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Started, this, &ABlaster::Equip);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABlaster::CrouchButtonPressed);
+
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABlaster::Sprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABlaster::EndSprint);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &ABlaster::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ABlaster::AimButtonPressed);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ABlaster::AimButtonReleased);
 	}
 
 }

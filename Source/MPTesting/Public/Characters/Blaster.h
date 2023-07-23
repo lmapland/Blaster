@@ -29,6 +29,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
 	bool IsWeaponEquipped() const;
+	bool IsAiming();
 
 protected:
 	virtual void BeginPlay() override;
@@ -38,6 +39,8 @@ protected:
 	void Sprint(const FInputActionValue& Value);
 	void EndSprint(const FInputActionValue& Value);
 	void CrouchButtonPressed();
+	void AimButtonPressed();
+	void AimButtonReleased();
 	//virtual void Crouch(bool bClientSimulation = false) override;
 	void Equip();
 	
@@ -62,6 +65,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* EquipAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* AimAction;
 
 
 private:
@@ -87,6 +93,7 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	AWeapon* OverlappingWeapon;
+
 
 public:
 };
