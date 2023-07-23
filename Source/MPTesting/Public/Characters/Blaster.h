@@ -12,6 +12,8 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 class UWidgetComponent;
+class AWeapon;
+class UCombatComponent;
 
 UCLASS()
 class MPTESTING_API ABlaster : public ACharacter
@@ -23,6 +25,10 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Jump() override;
+	void SetOverlappingWeapon(AWeapon* Weapon);
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostInitializeComponents() override;
+	bool IsWeaponEquipped() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -31,7 +37,9 @@ protected:
 	void Look(const FInputActionValue& Value);
 	void Sprint(const FInputActionValue& Value);
 	void EndSprint(const FInputActionValue& Value);
-	void Crouch(const FInputActionValue& Value);
+	void CrouchButtonPressed();
+	//virtual void Crouch(bool bClientSimulation = false) override;
+	void Equip();
 	
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -51,20 +59,34 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* CrouchAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* EquipAction;
 
 
 private:
+	UFUNCTION()
+	void OnRep_OverlappingWeapon(AWeapon* PreviousWeapon);
+
+	UFUNCTION(Server, Reliable)
+	void ServerEquipButtonPressed();
+
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	USpringArmComponent* CameraBoom;
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	UCameraComponent* FollowCamera;
-
-	APlayerController* PlayerController;
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Widgets, meta = (AllowPrivateAccess = "true"))
 	UWidgetComponent* DisplayNameWidget;
 
-public:
+	UPROPERTY(VisibleAnywhere)
+	UCombatComponent* CombatComponent;
 
+	APlayerController* PlayerController;
+
+	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
+	AWeapon* OverlappingWeapon;
+
+public:
 };
