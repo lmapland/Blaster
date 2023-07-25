@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "Enums/TurningInPlace.h"
 #include "Blaster.generated.h"
 
 class USpringArmComponent;
@@ -79,6 +80,8 @@ private:
 	UFUNCTION(Server, Reliable)
 	void ServerEquipButtonPressed();
 
+	void TurnInPlace(float DeltaTime);
+
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	USpringArmComponent* CameraBoom;
 
@@ -98,9 +101,13 @@ private:
 
 	float AO_Yaw = 0.f;
 	float AO_Pitch = 0.f;
+	float InterpAO_Yaw = 0.f;
 	FRotator StartingAimRotation = FRotator(0.f);
+
+	ETurningInPlace TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 
 public:
 	FORCEINLINE float GetAOYaw() const { return AO_Yaw; }
 	FORCEINLINE float GetAOPitch() const { return AO_Pitch; }
+	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 };

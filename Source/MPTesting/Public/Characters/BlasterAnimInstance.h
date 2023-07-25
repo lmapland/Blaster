@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "Enums/TurningInPlace.h"
 #include "BlasterAnimInstance.generated.h"
 
 class ABlaster;
@@ -63,5 +64,8 @@ private:
 	FTransform LeftHandTransform;
 
 	AWeapon* EquippedWeapon;
+
+	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	ETurningInPlace TurningInPlace;
 	
 };
