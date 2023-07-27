@@ -32,6 +32,7 @@ public:
 	bool IsWeaponEquipped() const;
 	bool IsAiming();
 	AWeapon* GetEquippedWeapon();
+	void PlayFireMontage(bool bAiming);
 
 protected:
 	virtual void BeginPlay() override;
@@ -43,6 +44,8 @@ protected:
 	void CrouchButtonPressed();
 	void AimButtonPressed();
 	void AimButtonReleased();
+	void FireButtonPressed();
+	void FireButtonReleased();
 	//virtual void Crouch(bool bClientSimulation = false) override;
 	void Equip();
 	void AimOffset(float DeltaTime);
@@ -71,6 +74,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* AimAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* FireAction;
 
 
 private:
@@ -92,7 +98,7 @@ private:
 	UWidgetComponent* DisplayNameWidget;
 
 	UPROPERTY(VisibleAnywhere)
-	UCombatComponent* CombatComponent;
+	UCombatComponent* CombatComponent2;
 
 	APlayerController* PlayerController;
 
@@ -105,6 +111,9 @@ private:
 	FRotator StartingAimRotation = FRotator(0.f);
 
 	ETurningInPlace TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+
+	UPROPERTY(EditAnywhere, Category = Combat);
+	UAnimMontage* FireWeaponMontage;
 
 public:
 	FORCEINLINE float GetAOYaw() const { return AO_Yaw; }

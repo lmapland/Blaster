@@ -17,6 +17,8 @@ enum class EWeaponState : uint8
 
 class USphereComponent;
 class UWidgetComponent;
+class UAnimationAsset;
+class ACasing;
 
 UCLASS()
 class MPTESTING_API AWeapon : public AActor
@@ -29,6 +31,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void SetPickupWidgetVisibility(bool bIsVisible);
 	void SetWeaponState(EWeaponState State);
+	virtual void Fire(const FVector& HitTarget);
 
 protected:
 	virtual void BeginPlay() override;
@@ -54,6 +57,13 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon Properties")
 	EWeaponState WeaponState = EWeaponState::EWS_Initial;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	UAnimationAsset* FireAnimation;
+	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<ACasing> CasingClass;
+
 
 public:
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() { return WeaponMesh; }

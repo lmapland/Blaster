@@ -7,10 +7,13 @@
 #include "Weapons/Weapon.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "DrawDebugHelpers.h"
 
 UCombatComponent::UCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
+	//UE_LOG(LogTemp, Warning, TEXT("UCombatComponent()"));
 
 	if (Character)
 	{
@@ -52,10 +55,70 @@ void UCombatComponent::OnRep_EquippedWeapon()
 	}
 }
 
+void UCombatComponent::FireButtonPressed(bool bPressed)
+{
+	bFireButtonPressed = bPressed;
+
+	if (bFireButtonPressed && EquippedWeapon)
+	{
+		FHitResult HitResult;
+		TraceUnderCrosshairs(HitResult);
+
+		ServerFire(HitResult.ImpactPoint);
+	}
+}
+
+void UCombatComponent::TraceUnderCrosshairs(FHitResult& HitResult)
+{
+	FVector2D ViewportSize;
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+	}
+
+	FVector2D CrosshairLocation(ViewportSize.X / 2, ViewportSize.Y / 2);
+	FVector CrosshairWorldPosition;
+	FVector CrosshairWorldDirection;
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(UGameplayStatics::GetPlayerController(this, 0), CrosshairLocation, CrosshairWorldPosition, CrosshairWorldDirection);
+	
+	if (bScreenToWorld)
+	{
+		FVector Start = CrosshairWorldPosition;
+		FVector End = Start + CrosshairWorldDirection * TRACE_LENGTH;
+		GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility);
+
+		/*if (!HitResult.bBlockingHit)
+		{
+			HitResult.ImpactPoint = End;
+		}
+		else
+		{
+			//DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 12.f, 15.f, FColor::Red);
+		}
+		HitTarget = HitResult.ImpactPoint;*/
+	}
+}
+
+void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
+{
+	MulticastFire(TraceHitTarget);
+}
+
+void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
+{
+	if (!EquippedWeapon) return;
+
+	if (Character)
+	{
+		Character->PlayFireMontage(bAiming);
+
+		EquippedWeapon->Fire(TraceHitTarget);
+	}
+}
+
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
 }
 
 void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -68,7 +131,11 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 void UCombatComponent::EquipWeapon(AWeapon* ToEquip)
 {
-	check(Character);
+	if (!Character)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquipWeapon(): No character set. Returning"));
+		return;
+	}
 	if (!ToEquip) return;
 
 	// attach wep to socket

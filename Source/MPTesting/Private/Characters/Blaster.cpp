@@ -13,6 +13,7 @@
 #include "BlasterComponents/CombatComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Characters/BlasterAnimInstance.h"
 
 
 ABlaster::ABlaster()
@@ -45,8 +46,9 @@ ABlaster::ABlaster()
 	DisplayNameWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("DisplayNameWidget"));
 	DisplayNameWidget->SetupAttachment(GetRootComponent());
 
-	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
-	CombatComponent->SetIsReplicated(true);
+	CombatComponent2 = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent2"));
+	CombatComponent2->SetIsReplicated(true);
+	UE_LOG(LogTemp, Warning, TEXT("ABlaster(): Should be called first"));
 
 }
 
@@ -60,25 +62,40 @@ void ABlaster::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 void ABlaster::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+	UE_LOG(LogTemp, Warning, TEXT("PostInitializeComponents(): Should be called second"));
 
-	check(CombatComponent);
-	CombatComponent->Character = this;
-
+	if (CombatComponent2)
+	{
+		CombatComponent2->Character = this;
+	}
 }
 
 bool ABlaster::IsWeaponEquipped() const
 {
-	return CombatComponent->EquippedWeapon != nullptr;
+	return (CombatComponent2 && CombatComponent2->EquippedWeapon);
 }
 
 bool ABlaster::IsAiming()
 {
-	return (CombatComponent && CombatComponent->bAiming);
+	return (CombatComponent2 && CombatComponent2->bAiming);
 }
 
 AWeapon* ABlaster::GetEquippedWeapon()
 {
-	return CombatComponent ? CombatComponent->EquippedWeapon : nullptr;
+	return CombatComponent2 ? CombatComponent2->EquippedWeapon : nullptr;
+}
+
+void ABlaster::PlayFireMontage(bool bAiming)
+{
+	if (!CombatComponent2 || !CombatComponent2->EquippedWeapon) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && FireWeaponMontage)
+	{
+		AnimInstance->Montage_Play(FireWeaponMontage);
+		FName SectionName = bAiming ? FName("FireIronsights") : FName("FireHip");
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
 }
 
 void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
@@ -154,16 +171,30 @@ void ABlaster::CrouchButtonPressed()
 
 void ABlaster::AimButtonPressed()
 {
-	check(CombatComponent);
+	check(CombatComponent2);
 
-	CombatComponent->SetAiming(true);
+	CombatComponent2->SetAiming(true);
 }
 
 void ABlaster::AimButtonReleased()
 {
-	check(CombatComponent);
+	check(CombatComponent2);
 
-	CombatComponent->SetAiming(false);
+	CombatComponent2->SetAiming(false);
+}
+
+void ABlaster::FireButtonPressed()
+{
+	check(CombatComponent2);
+
+	CombatComponent2->FireButtonPressed(true);
+}
+
+void ABlaster::FireButtonReleased()
+{
+	check(CombatComponent2);
+
+	CombatComponent2->FireButtonPressed(false);
 }
 
 /*void ABlaster::Crouch(bool bClientSimulation)
@@ -172,11 +203,11 @@ void ABlaster::AimButtonReleased()
 
 void ABlaster::Equip()
 {
-	check(CombatComponent);
+	check(CombatComponent2);
 
 	if (HasAuthority())
 	{
-		CombatComponent->EquipWeapon(OverlappingWeapon);
+		CombatComponent2->EquipWeapon(OverlappingWeapon);
 	}
 	else
 	{
@@ -186,7 +217,7 @@ void ABlaster::Equip()
 
 void ABlaster::AimOffset(float DeltaTime)
 {
-	if (CombatComponent && CombatComponent->EquippedWeapon == nullptr) return;
+	if (CombatComponent2 && CombatComponent2->EquippedWeapon == nullptr) return;
 
 	FVector Velocity = GetVelocity();
 	Velocity.Z = 0.f;
@@ -263,9 +294,9 @@ void ABlaster::TurnInPlace(float DeltaTime)
 
 void ABlaster::ServerEquipButtonPressed_Implementation()
 {
-	check(CombatComponent);
+	check(CombatComponent2);
 
-	CombatComponent->EquipWeapon(OverlappingWeapon);
+	CombatComponent2->EquipWeapon(OverlappingWeapon);
 }
 
 void ABlaster::Tick(float DeltaTime)
@@ -289,8 +320,12 @@ void ABlaster::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABlaster::Sprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABlaster::EndSprint);
+
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ABlaster::AimButtonPressed);
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ABlaster::AimButtonReleased);
+
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ABlaster::FireButtonPressed);
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ABlaster::FireButtonReleased);
 	}
 
 }

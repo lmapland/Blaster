@@ -7,6 +7,9 @@
 #include "Components/WidgetComponent.h"
 #include "Characters/Blaster.h"
 #include "Net/UnrealNetwork.h"
+#include "Animation/AnimationAsset.h"
+#include "Weapons/Casing.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 AWeapon::AWeapon()
 {
@@ -108,6 +111,21 @@ void AWeapon::SetWeaponState(EWeaponState State)
 		SetPickupWidgetVisibility(false);
 		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
+	}
+}
+
+void AWeapon::Fire(const FVector& HitTarget)
+{
+	if (!FireAnimation) return;
+
+	WeaponMesh->PlayAnimation(FireAnimation, false);
+
+	const USkeletalMeshSocket* CasingSocket = GetWeaponMesh()->GetSocketByName(FName("AmmoEject"));
+	if (CasingSocket && CasingClass)
+	{
+		FTransform SocketTransform = CasingSocket->GetSocketTransform(GetWeaponMesh());
+		ACasing* Spawned = GetWorld()->SpawnActor<ACasing>(CasingClass, SocketTransform.GetLocation(), SocketTransform.GetRotation().Rotator());
+		
 	}
 }
 
