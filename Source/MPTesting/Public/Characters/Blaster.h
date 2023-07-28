@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "Enums/TurningInPlace.h"
+#include "Interfaces/InteractWithCrosshairs.h"
 #include "Blaster.generated.h"
 
 class USpringArmComponent;
@@ -17,7 +18,7 @@ class AWeapon;
 class UCombatComponent;
 
 UCLASS()
-class MPTESTING_API ABlaster : public ACharacter
+class MPTESTING_API ABlaster : public ACharacter, public IInteractWithCrosshairs
 {
 	GENERATED_BODY()
 
@@ -33,6 +34,7 @@ public:
 	bool IsAiming();
 	AWeapon* GetEquippedWeapon();
 	void PlayFireMontage(bool bAiming);
+	FVector GetHitTarget() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -87,6 +89,7 @@ private:
 	void ServerEquipButtonPressed();
 
 	void TurnInPlace(float DeltaTime);
+	void HideCameraIfCharacterClose();
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	USpringArmComponent* CameraBoom;
@@ -115,8 +118,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = Combat);
 	UAnimMontage* FireWeaponMontage;
 
+	UPROPERTY(EditAnywhere, Category = Camera);
+	float CameraThreshold = 200.f;
+
+
 public:
 	FORCEINLINE float GetAOYaw() const { return AO_Yaw; }
 	FORCEINLINE float GetAOPitch() const { return AO_Pitch; }
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 };

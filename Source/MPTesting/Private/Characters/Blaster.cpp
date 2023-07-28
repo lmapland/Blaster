@@ -31,6 +31,7 @@ ABlaster::ABlaster()
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 850.f, 0.f);
@@ -96,6 +97,12 @@ void ABlaster::PlayFireMontage(bool bAiming)
 		FName SectionName = bAiming ? FName("FireIronsights") : FName("FireHip");
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
+}
+
+FVector ABlaster::GetHitTarget() const
+{
+	if (!CombatComponent2) return FVector();
+	return CombatComponent2->HitTarget;
 }
 
 void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
@@ -292,6 +299,27 @@ void ABlaster::TurnInPlace(float DeltaTime)
 	}
 }
 
+void ABlaster::HideCameraIfCharacterClose()
+{
+	if (!IsLocallyControlled()) return;
+	if ((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold)
+	{
+		GetMesh()->SetVisibility(false);
+		if (CombatComponent2 && CombatComponent2->EquippedWeapon && CombatComponent2->EquippedWeapon->GetWeaponMesh())
+		{
+			CombatComponent2->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = true;
+		}
+	}
+	else
+	{
+		GetMesh()->SetVisibility(true);
+		if (CombatComponent2 && CombatComponent2->EquippedWeapon && CombatComponent2->EquippedWeapon->GetWeaponMesh())
+		{
+			CombatComponent2->EquippedWeapon->GetWeaponMesh()->bOwnerNoSee = false;
+		}
+	}
+}
+
 void ABlaster::ServerEquipButtonPressed_Implementation()
 {
 	check(CombatComponent2);
@@ -304,6 +332,7 @@ void ABlaster::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	AimOffset(DeltaTime);
+	HideCameraIfCharacterClose();
 }
 
 void ABlaster::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
