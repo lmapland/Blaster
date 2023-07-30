@@ -52,6 +52,9 @@ protected:
 
 private:
 	void InterpFOV(float DeltaTime);
+	void FireTimerFinished();
+	void StartFireTimer();
+	void Fire();
 
 	ABlaster* Character;
 
@@ -86,7 +89,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = Combat)
 	float ZoomInterpSpeed = 20.f;
 
-
 	/*
 	* HUD and crosshairs
 	*/
@@ -95,4 +97,11 @@ private:
 	float CrosshairAimFactor;
 	float CrosshairShootingFactor;
 	FHUDPackage HUDPackage;
+
+	/**
+	* Automatic Fire
+	*/
+	FTimerHandle FireTimer;
+
+	bool bCanFire = true;
 };

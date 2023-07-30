@@ -89,8 +89,16 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 	float ZoomInterpSpeed = 20.f;
 
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	float FireDelay = .2f;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	bool bAutomatic = true;
+
 public:
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() { return WeaponMesh; }
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
+	FORCEINLINE float GetFireDelay() const { return FireDelay; }
+	FORCEINLINE bool IsAutomatic() const { return bAutomatic; }
 };

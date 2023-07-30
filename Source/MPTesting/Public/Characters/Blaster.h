@@ -35,6 +35,12 @@ public:
 	AWeapon* GetEquippedWeapon();
 	void PlayFireMontage(bool bAiming);
 	FVector GetHitTarget() const;
+	void PlayHitReactMontage();
+	virtual void OnRep_ReplicatedMovement() override;
+	
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastHit();
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -51,7 +57,8 @@ protected:
 	//virtual void Crouch(bool bClientSimulation = false) override;
 	void Equip();
 	void AimOffset(float DeltaTime);
-	
+	void CalculateAO_Pitch();
+	void SimProxiesTurn();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* CharMappingContext;
@@ -90,6 +97,7 @@ private:
 
 	void TurnInPlace(float DeltaTime);
 	void HideCameraIfCharacterClose();
+	float CalculateSpeed();
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	USpringArmComponent* CameraBoom;
@@ -117,9 +125,19 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Combat);
 	UAnimMontage* FireWeaponMontage;
+	
+	UPROPERTY(EditAnywhere, Category = Combat);
+	UAnimMontage* HitReactMontage;
 
 	UPROPERTY(EditAnywhere, Category = Camera);
 	float CameraThreshold = 200.f;
+
+	bool bRotateRootBone = true;
+	float TurnThreshold = 0.5f;
+	FRotator PreviousProxyRotation;
+	FRotator CurrentProxyRotation;
+	float ProxyYaw;
+	float TimeSinceLastMovementReplication = 0.f;
 
 
 public:
@@ -127,4 +145,5 @@ public:
 	FORCEINLINE float GetAOPitch() const { return AO_Pitch; }
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
 };

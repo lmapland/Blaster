@@ -34,6 +34,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bWeaponEquipped = Blaster->IsWeaponEquipped();
 	bIsCrouched = Blaster->bIsCrouched;
 	bAiming = Blaster->IsAiming();
+	bRotateRootBone = Blaster->ShouldRotateRootBone();
 
 	EquippedWeapon = Blaster->GetEquippedWeapon();
 	TurningInPlace = Blaster->GetTurningInPlace();
