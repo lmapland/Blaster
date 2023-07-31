@@ -263,7 +263,7 @@ void UCombatComponent::EquipWeapon(AWeapon* ToEquip)
 		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
 	}
 	UE_LOG(LogTemp, Warning, TEXT("UCombatComponent::EquipWeapon()"));
-	EquippedWeapon->SetOwner(Character); // Note that SetOwner)() is provided by Actor and is replicated
+	EquippedWeapon->SetOwner(Character); // Note that SetOwner() is provided by Actor and is replicated
 	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 	Character->bUseControllerRotationYaw = true;
 }

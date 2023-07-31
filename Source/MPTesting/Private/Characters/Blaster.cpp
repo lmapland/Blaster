@@ -15,6 +15,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Characters/BlasterAnimInstance.h"
 #include "MPTesting/MPTesting.h"
+#include "Controller/BlasterController.h"
+#include "GameMode/BlasterGameMode.h"
 
 
 ABlaster::ABlaster()
@@ -60,6 +62,8 @@ void ABlaster::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME_CONDITION(ABlaster, OverlappingWeapon, COND_OwnerOnly);
+	DOREPLIFETIME(ABlaster, Health);
+	DOREPLIFETIME(ABlaster, Stamina);
 }
 
 void ABlaster::PostInitializeComponents()
@@ -101,6 +105,15 @@ void ABlaster::PlayFireMontage(bool bAiming)
 	}
 }
 
+void ABlaster::PlayElimMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && ElimMontage)
+	{
+		AnimInstance->Montage_Play(ElimMontage);
+	}
+}
+
 FVector ABlaster::GetHitTarget() const
 {
 	if (!CombatComponent2) return FVector();
@@ -130,6 +143,12 @@ void ABlaster::OnRep_ReplicatedMovement()
 	TimeSinceLastMovementReplication = 0.f;
 }
 
+void ABlaster::Elim_Implementation()
+{
+	bElimmed = true;
+	PlayElimMontage();
+}
+
 void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
 {
 	if (IsLocallyControlled() && OverlappingWeapon)
@@ -150,14 +169,21 @@ void ABlaster::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	PlayerController = Cast<APlayerController>(GetController());
-	if (PlayerController)
+	BlasterController = Cast<ABlasterController>(GetController());
+	if (BlasterController)
 	{
-		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BlasterController->GetLocalPlayer());
 		if (Subsystem)
 		{
 			Subsystem->AddMappingContext(CharMappingContext, 0);
 		}
+
+		BlasterController->SetHUDHealth(Health, MaxHealth);
+	}
+
+	if (HasAuthority())
+	{
+		OnTakeAnyDamage.AddDynamic(this, &ABlaster::ReceiveDamage);
 	}
 }
 
@@ -328,6 +354,26 @@ void ABlaster::SimProxiesTurn()
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 }
 
+void ABlaster::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
+{
+	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
+	if (IsLocallyControlled() && BlasterController)	BlasterController->SetHUDHealth(Health, MaxHealth);
+
+	if (Health == 0.f)
+	{
+		ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>();
+		if (BlasterGameMode)
+		{
+			ABlasterController* AttackerController = Cast<ABlasterController>(InstigatorController);
+			BlasterGameMode->PlayerEliminated(this, BlasterController, AttackerController);
+		}
+	}
+	else
+	{
+		PlayHitReactMontage();
+	}
+}
+
 void ABlaster::TurnInPlace(float DeltaTime)
 {
 	if (AO_Yaw > 90.f)
@@ -391,9 +437,17 @@ float ABlaster::CalculateSpeed()
 	return Velocity.Size();
 }
 
-void ABlaster::MulticastHit_Implementation()
+void ABlaster::OnRep_Health()
 {
+	if (IsLocallyControlled() && BlasterController)
+	{
+		BlasterController->SetHUDHealth(Health, MaxHealth);
+	}
 	PlayHitReactMontage();
+}
+
+void ABlaster::OnRep_Stamina()
+{
 }
 
 void ABlaster::ServerEquipButtonPressed_Implementation()

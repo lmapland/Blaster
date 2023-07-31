@@ -44,16 +44,15 @@ void AProjectile::BeginPlay()
 	{
 		TracerComponent = UGameplayStatics::SpawnEmitterAttached(Tracer, CollisionBox, FName(), GetActorLocation(), GetActorRotation(), EAttachLocation::KeepWorldPosition);
 	}
+
+	if (ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner()))
+	{
+		OwnerController = OwnerCharacter->Controller;
+	}
 }
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// In future I'd like to use an interface
-	ABlaster* Blaster = Cast<ABlaster>(OtherActor);
-	if (Blaster)
-	{
-		Blaster->MulticastHit();
-	}
 
 	Destroy(); // destruction is propogated to all clients
 }

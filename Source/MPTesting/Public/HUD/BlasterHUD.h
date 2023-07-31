@@ -22,6 +22,7 @@ public:
 	FLinearColor CrosshairsColor;
 };
 
+class UBlasterOverlay;
 /**
  * 
  */
@@ -32,6 +33,15 @@ class MPTESTING_API ABlasterHUD : public AHUD
 	
 public:
 	virtual void DrawHUD() override;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats")
+	TSubclassOf<UUserWidget> BlasterOverlayClass;
+
+	UBlasterOverlay* Overlay;
+
+protected:
+	virtual void BeginPlay() override;
+	void AddCharacterOverlay();
 
 private:
 	void DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVector2D Spread, FLinearColor Color);

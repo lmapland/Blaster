@@ -16,6 +16,7 @@ class UInputAction;
 class UWidgetComponent;
 class AWeapon;
 class UCombatComponent;
+class ABlasterController;
 
 UCLASS()
 class MPTESTING_API ABlaster : public ACharacter, public IInteractWithCrosshairs
@@ -34,13 +35,13 @@ public:
 	bool IsAiming();
 	AWeapon* GetEquippedWeapon();
 	void PlayFireMontage(bool bAiming);
+	void PlayElimMontage();
 	FVector GetHitTarget() const;
 	void PlayHitReactMontage();
 	virtual void OnRep_ReplicatedMovement() override;
-	
-	UFUNCTION(NetMulticast, Unreliable)
-	void MulticastHit();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Elim();
 
 protected:
 	virtual void BeginPlay() override;
@@ -59,6 +60,9 @@ protected:
 	void AimOffset(float DeltaTime);
 	void CalculateAO_Pitch();
 	void SimProxiesTurn();
+
+	UFUNCTION()
+	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* CharMappingContext;
@@ -111,7 +115,7 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	UCombatComponent* CombatComponent2;
 
-	APlayerController* PlayerController;
+	ABlasterController* BlasterController;
 
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	AWeapon* OverlappingWeapon;
@@ -123,13 +127,16 @@ private:
 
 	ETurningInPlace TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 
-	UPROPERTY(EditAnywhere, Category = Combat);
+	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* FireWeaponMontage;
 	
-	UPROPERTY(EditAnywhere, Category = Combat);
+	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* HitReactMontage;
 
-	UPROPERTY(EditAnywhere, Category = Camera);
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* ElimMontage;
+
+	UPROPERTY(EditAnywhere, Category = Camera)
 	float CameraThreshold = 200.f;
 
 	bool bRotateRootBone = true;
@@ -139,6 +146,30 @@ private:
 	float ProxyYaw;
 	float TimeSinceLastMovementReplication = 0.f;
 
+	/**
+	* Player Stats
+	*/
+
+	UFUNCTION()
+	void OnRep_Health();
+
+	UFUNCTION()
+	void OnRep_Stamina();
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats");
+	float MaxHealth = 100.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Health, EditAnywhere, Category = "Player Stats");
+	float Health = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats");
+	float MaxStamina = 100.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Stamina, EditAnywhere, Category = "Player Stats");
+	float Stamina = 100.f;
+
+	bool bElimmed = false;
+
 
 public:
 	FORCEINLINE float GetAOYaw() const { return AO_Yaw; }
@@ -146,4 +177,5 @@ public:
 	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
+	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 };
