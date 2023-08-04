@@ -8,6 +8,7 @@
 
 class ABlaster;
 class ABlasterController;
+
 /**
  * 
  */
@@ -18,4 +19,5 @@ class MPTESTING_API ABlasterGameMode : public AGameMode
 	
 public:
 	virtual void PlayerEliminated(ABlaster* ElimmedCharacter, ABlasterController* VictimController, ABlasterController* AttackerController);
+	virtual void RequestRespawn(ACharacter* ElimmedCharacter, AController* ElimmedController);
 };

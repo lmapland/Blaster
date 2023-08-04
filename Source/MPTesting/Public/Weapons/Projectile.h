@@ -30,6 +30,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Damage)
 	float Damage = 1.f;
 
+	UPROPERTY()
 	AController* OwnerController;
 
 private:

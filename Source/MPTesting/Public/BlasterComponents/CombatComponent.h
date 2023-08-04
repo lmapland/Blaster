@@ -56,10 +56,13 @@ private:
 	void StartFireTimer();
 	void Fire();
 
+	UPROPERTY()
 	ABlaster* Character;
 
+	UPROPERTY()
 	ABlasterController* Controller;
 
+	UPROPERTY()
 	ABlasterHUD* HUD;
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)

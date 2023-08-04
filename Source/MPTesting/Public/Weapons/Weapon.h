@@ -32,7 +32,7 @@ public:
 	void SetPickupWidgetVisibility(bool bIsVisible);
 	void SetWeaponState(EWeaponState State);
 	virtual void Fire(const FVector& HitTarget);
-
+	void Dropped();
 	
 	/*
 	* Textures for the weapon crosshairs

@@ -13,15 +13,21 @@
 #include "BlasterComponents/CombatComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Characters/BlasterAnimInstance.h"
 #include "MPTesting/MPTesting.h"
 #include "Controller/BlasterController.h"
 #include "GameMode/BlasterGameMode.h"
+#include "TimerManager.h"
+#include "Sound/SoundCue.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "PlayerStates/BlasterPlayerState.h"
 
 
 ABlaster::ABlaster()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	SpawnCollisionHandlingMethod = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());
@@ -53,8 +59,8 @@ ABlaster::ABlaster()
 
 	CombatComponent2 = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent2"));
 	CombatComponent2->SetIsReplicated(true);
-	UE_LOG(LogTemp, Warning, TEXT("ABlaster(): Should be called first"));
 
+	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
 }
 
 void ABlaster::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -69,7 +75,6 @@ void ABlaster::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 void ABlaster::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	UE_LOG(LogTemp, Warning, TEXT("PostInitializeComponents(): Should be called second"));
 
 	if (CombatComponent2)
 	{
@@ -130,7 +135,6 @@ void ABlaster::PlayHitReactMontage()
 	{
 		AnimInstance->Montage_Play(HitReactMontage);
 		FName SectionName = FName("FromFront");
-		UE_LOG(LogTemp, Warning, TEXT("Hit Reacting!"));
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }
@@ -143,10 +147,67 @@ void ABlaster::OnRep_ReplicatedMovement()
 	TimeSinceLastMovementReplication = 0.f;
 }
 
-void ABlaster::Elim_Implementation()
+void ABlaster::Destroyed()
+{
+	Super::Destroyed();
+
+	if (ElimBotComponent)
+	{
+		ElimBotComponent->DestroyComponent();
+	}
+}
+
+void ABlaster::SetHUDHealth()
+{
+	if (IsLocallyControlled() && BlasterController)	BlasterController->SetHUDHealth(Health, MaxHealth);
+}
+
+void ABlaster::Elim()
+{
+	if (CombatComponent2 && CombatComponent2->EquippedWeapon)
+	{
+		CombatComponent2->EquippedWeapon->Dropped();
+	}
+
+	MulticastElim();
+	GetWorldTimerManager().SetTimer(ElimTimer, this, &ABlaster::ElimTimerFinished, ElimDelay);
+}
+
+void ABlaster::MulticastElim_Implementation()
 {
 	bElimmed = true;
 	PlayElimMontage();
+
+	GetCharacterMovement()->DisableMovement();
+	GetCharacterMovement()->StopMovementImmediately();
+
+	if (BlasterController)
+	{
+		DisableInput(BlasterController);
+	}
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (DissolveMaterialInstance)
+	{
+		DynamicDissolveMaterialInstance = UMaterialInstanceDynamic::Create(DissolveMaterialInstance, this);
+		GetMesh()->SetMaterial(0, DynamicDissolveMaterialInstance);
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Dissolve"), 0.55f);
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Glow"), 100.f);
+	}
+	StartDissolve();
+
+	if (ElimBotEffect)
+	{
+		FVector ElimBotSpawnPoint(GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z + 200.f);
+		ElimBotComponent = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ElimBotEffect, ElimBotSpawnPoint, GetActorRotation());
+	}
+
+	if (ElimBotSound)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(this, ElimBotSound, GetActorLocation());
+	}
 }
 
 void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
@@ -156,7 +217,7 @@ void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
 		OverlappingWeapon->SetPickupWidgetVisibility(false);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Setting OverlappingWeapon"));
+	//UE_LOG(LogTemp, Warning, TEXT("Setting OverlappingWeapon"));
 	OverlappingWeapon = Weapon;
 	
 	if (IsLocallyControlled() && OverlappingWeapon)
@@ -168,10 +229,12 @@ void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
 void ABlaster::BeginPlay()
 {
 	Super::BeginPlay();
+	//UE_LOG(LogTemp, Warning, TEXT("In BeginPlay()"));
 	
 	BlasterController = Cast<ABlasterController>(GetController());
 	if (BlasterController)
 	{
+		//UE_LOG(LogTemp, Warning, TEXT("In BeginPlay(): BlasterController is valid"));
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BlasterController->GetLocalPlayer());
 		if (Subsystem)
 		{
@@ -185,6 +248,8 @@ void ABlaster::BeginPlay()
 	{
 		OnTakeAnyDamage.AddDynamic(this, &ABlaster::ReceiveDamage);
 	}
+
+	GetWorldTimerManager().SetTimer(AfterBeginPlayTimer, this, &ABlaster::AfterBeginPlay, AfterBeginPlayTime);
 }
 
 void ABlaster::Move(const FInputActionValue& Value)
@@ -365,6 +430,11 @@ void ABlaster::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageTy
 		if (BlasterGameMode)
 		{
 			ABlasterController* AttackerController = Cast<ABlasterController>(InstigatorController);
+			if (!BlasterController)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("In Blaster::ReceiveDamage(): BlasterController is null - casting"));
+				BlasterController = Cast<ABlasterController>(GetController());
+			}
 			BlasterGameMode->PlayerEliminated(this, BlasterController, AttackerController);
 		}
 	}
@@ -435,6 +505,57 @@ float ABlaster::CalculateSpeed()
 	FVector Velocity = GetVelocity();
 	Velocity.Z = 0.f;
 	return Velocity.Size();
+}
+
+void ABlaster::ElimTimerFinished()
+{
+	ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>();
+	if (BlasterGameMode)
+	{
+		BlasterGameMode->RequestRespawn(this, Controller);
+	}
+
+	if (ElimBotComponent)
+	{
+		ElimBotComponent->DestroyComponent();
+	}
+}
+
+void ABlaster::StartDissolve()
+{
+	DissolveTrack.BindDynamic(this, &ABlaster::UpdateDissolveMaterial);
+
+	if (DissolveCurve && DissolveTimeline)
+	{
+		DissolveTimeline->AddInterpFloat(DissolveCurve, DissolveTrack);
+		DissolveTimeline->Play();
+	}
+}
+
+void ABlaster::AfterBeginPlay()
+{
+	if (!BlasterController)
+	{
+		BlasterController = Cast<ABlasterController>(GetController());
+	}
+
+	BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
+	if (BlasterPlayerState)
+	{
+		BlasterPlayerState->AddToScore(0.f);
+
+		//UE_LOG(LogTemp, Warning, TEXT("In Blaster calling AddToDefeats(0)"));
+		BlasterPlayerState->AddToDefeats(0);
+	}
+}
+
+void ABlaster::UpdateDissolveMaterial(float DissolveValue)
+{
+	if (DynamicDissolveMaterialInstance)
+	{
+		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Dissolve"), DissolveValue);
+	}
+
 }
 
 void ABlaster::OnRep_Health()

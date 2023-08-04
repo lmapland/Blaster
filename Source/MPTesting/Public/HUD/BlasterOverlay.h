@@ -20,10 +20,19 @@ class MPTESTING_API UBlasterOverlay : public UUserWidget
 public:
 	void SetHealth(float Health, float MaxHealth);
 	void SetStamina(float Stamina, float MaxStamina);
+	void SetScore(float Score);
+	void SetDefeats(int32 Defeats);
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthBar;
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* HealthText;
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* ScoreAmount;
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* DefeatsAmount;
+
 };
