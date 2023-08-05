@@ -2,14 +2,17 @@
 
 
 #include "Weapons/Weapon.h"
+#include "Animation/AnimationAsset.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
-#include "Characters/Blaster.h"
-#include "Net/UnrealNetwork.h"
-#include "Animation/AnimationAsset.h"
-#include "Weapons/Casing.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
+#include "Sound/SoundCue.h"
+#include "Characters/Blaster.h"
+#include "Controller/BlasterController.h"
+#include "Weapons/Casing.h"
 
 AWeapon::AWeapon()
 {
@@ -56,7 +59,6 @@ void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 {
 	if (ABlaster* Char = Cast<ABlaster>(OtherActor))
 	{
-		//if (PickupWidget) SetPickupWidgetVisibility(true);
 		UE_LOG(LogTemp, Warning, TEXT("OnSphereOverlap(): Setting OverlappingWeapon"));
 		Char->SetOverlappingWeapon(this);
 	}
@@ -66,7 +68,6 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 {
 	if (ABlaster* Char = Cast<ABlaster>(OtherActor))
 	{
-		//if (PickupWidget) SetPickupWidgetVisibility(false);
 		Char->SetOverlappingWeapon(nullptr);
 	}
 }
@@ -82,6 +83,38 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, WeaponState);
+	DOREPLIFETIME(AWeapon, Ammo);
+}
+
+void AWeapon::SetOwner(AActor* NewOwner)
+{
+	Super::SetOwner(NewOwner);
+
+	if (NewOwner == nullptr)
+	{
+		Blaster = nullptr;
+		BlasterController = nullptr;
+	}
+	else
+	{
+		Blaster = Cast<ABlaster>(NewOwner);
+		if (Blaster)
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("AWeapon::SetOwner(): Cast to Blaster was successful"));
+			BlasterController = Blaster->GetBlasterController();
+			if (BlasterController)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("AWeapon::SetOwner(): Cast to BlasterController was successful"));
+			}
+		}
+	}
+}
+
+void AWeapon::OnRep_Owner()
+{
+	Super::OnRep_Owner();
+
+	SetHUDAmmo();
 }
 
 void AWeapon::SetPickupWidgetVisibility(bool bIsVisible)
@@ -138,6 +171,53 @@ void AWeapon::OnRep_WeaponState()
 	}
 }
 
+void AWeapon::SetHUDAmmo()
+{
+	//UE_LOG(LogTemp, Warning, TEXT("AWeapon::SetHUDAmmo()"));
+	Blaster = Blaster ? Cast<ABlaster>(GetOwner()) : Blaster;
+	if (Blaster && Blaster->IsLocallyControlled())
+	{
+		if (BlasterController)
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("AWeapon::SetHUDAmmo(): Blaster & BlasterController are valid"));
+			BlasterController->SetHUDWeaponAmmo(Ammo);
+		}
+		else
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("AWeapon::SetHUDAmmo(): Blaster Controller is null"));
+			BlasterController = BlasterController ? Blaster->GetBlasterController() : BlasterController;
+			if (BlasterController)
+			{
+				BlasterController->SetHUDWeaponAmmo(Ammo);
+			}
+		}
+	}
+}
+
+void AWeapon::AddAmmo(int32 AmountToAdd)
+{
+	Ammo = FMath::Clamp(Ammo - AmountToAdd, 0, MagCapacity);
+	SetHUDAmmo();
+}
+
+void AWeapon::PlayEquipSound(FVector Location)
+{
+	if (EquipSound) UGameplayStatics::PlaySoundAtLocation(this, EquipSound, Location);
+}
+
+void AWeapon::SpendRound()
+{
+	if (Ammo == 0) return;
+
+	--Ammo;
+	SetHUDAmmo();
+}
+
+void AWeapon::OnRep_Ammo()
+{
+	SetHUDAmmo();
+}
+
 void AWeapon::Fire(const FVector& HitTarget)
 {
 	if (!FireAnimation) return;
@@ -151,6 +231,7 @@ void AWeapon::Fire(const FVector& HitTarget)
 		ACasing* Spawned = GetWorld()->SpawnActor<ACasing>(CasingClass, SocketTransform.GetLocation(), SocketTransform.GetRotation().Rotator());
 		
 	}
+	SpendRound();
 }
 
 void AWeapon::Dropped()
@@ -158,5 +239,6 @@ void AWeapon::Dropped()
 	SetWeaponState(EWeaponState::EWS_Dropped);
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld,true);
 	WeaponMesh->DetachFromComponent(DetachRules);
+	SetOwner(nullptr);
 }
 

@@ -22,6 +22,7 @@
 #include "Sound/SoundCue.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "PlayerStates/BlasterPlayerState.h"
+#include "Enums/WeaponTypes.h"
 
 
 ABlaster::ABlaster()
@@ -119,6 +120,28 @@ void ABlaster::PlayElimMontage()
 	}
 }
 
+void ABlaster::PlayReloadMontage()
+{
+	if (!CombatComponent2 || !CombatComponent2->EquippedWeapon) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && ReloadMontage)
+	{
+		AnimInstance->Montage_Play(ReloadMontage);
+		FName SectionName;
+		switch (CombatComponent2->EquippedWeapon->GetWeaponType())
+		{
+		case EWeaponType::EWT_AssaultRifle:
+			SectionName = FName("Rifle");
+			break;
+		case EWeaponType::EWT_Pistol:
+			SectionName = FName("Pistol");
+			break;
+		}
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
 FVector ABlaster::GetHitTarget() const
 {
 	if (!CombatComponent2) return FVector();
@@ -162,6 +185,12 @@ void ABlaster::SetHUDHealth()
 	if (IsLocallyControlled() && BlasterController)	BlasterController->SetHUDHealth(Health, MaxHealth);
 }
 
+ECombatState ABlaster::GetCombatState() const
+{
+	if (!CombatComponent2) return ECombatState::ECS_Unoccupied;
+	return CombatComponent2->CombatState;
+}
+
 void ABlaster::Elim()
 {
 	if (CombatComponent2 && CombatComponent2->EquippedWeapon)
@@ -183,6 +212,7 @@ void ABlaster::MulticastElim_Implementation()
 
 	if (BlasterController)
 	{
+		BlasterController->SetHUDWeaponAmmo(0);
 		DisableInput(BlasterController);
 	}
 
@@ -229,7 +259,6 @@ void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
 void ABlaster::BeginPlay()
 {
 	Super::BeginPlay();
-	//UE_LOG(LogTemp, Warning, TEXT("In BeginPlay()"));
 	
 	BlasterController = Cast<ABlasterController>(GetController());
 	if (BlasterController)
@@ -336,6 +365,11 @@ void ABlaster::Equip()
 	{
 		ServerEquipButtonPressed();
 	}
+}
+
+void ABlaster::ReloadButtonPressed()
+{
+	if (CombatComponent2) CombatComponent2->Reload();
 }
 
 void ABlaster::AimOffset(float DeltaTime)
@@ -609,6 +643,7 @@ void ABlaster::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABlaster::Look);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABlaster::Jump);
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Started, this, &ABlaster::Equip);
+		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ABlaster::ReloadButtonPressed);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABlaster::CrouchButtonPressed);
 
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABlaster::Sprint);

@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "HUD/BlasterHUD.h"
+#include "Enums/WeaponTypes.h"
+#include "Enums/CombatState.h"
 #include "CombatComponent.generated.h"
 
 constexpr auto TRACE_LENGTH = 80000.f;
@@ -26,6 +28,10 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void EquipWeapon(AWeapon* ToEquip);
+	void Reload();
+
+	UFUNCTION(BlueprintCallable)
+	void FinishReloading();
 
 
 protected:
@@ -37,6 +43,12 @@ protected:
 	
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
+
+	UFUNCTION()
+	void OnRep_CarriedAmmo();
+
+	UFUNCTION()
+	void OnRep_CombatState();
 
 	void FireButtonPressed(bool bPressed);
 
@@ -50,11 +62,21 @@ protected:
 
 	void SetHUDCrosshairs(float DeltaTime);
 
+	UFUNCTION(Server, Reliable)
+	void ServerReload();
+
+	void HandleReload();
+
+	int32 AmountToReload();
+
 private:
 	void InterpFOV(float DeltaTime);
 	void FireTimerFinished();
 	void StartFireTimer();
 	void Fire();
+	bool CanFire();
+	void InitializeCarriedAmmo();
+	void UpdateAmmoValues();
 
 	UPROPERTY()
 	ABlaster* Character;
@@ -107,4 +129,16 @@ private:
 	FTimerHandle FireTimer;
 
 	bool bCanFire = true;
+
+	// Carried Ammo for the currently equipped weapon
+	UPROPERTY(ReplicatedUsing = OnRep_CarriedAmmo)
+	int32 CarriedAmmo;
+
+	UPROPERTY(EditAnywhere, Category = Ammo)
+	int32 StartingARAmmo = 30;
+
+	TMap<EWeaponType, int32> CarriedAmmoMap;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
+	ECombatState CombatState = ECombatState::ECS_Unoccupied;
 };

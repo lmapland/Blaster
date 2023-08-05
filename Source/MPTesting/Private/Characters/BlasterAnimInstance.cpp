@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Weapons/Weapon.h"
+#include "Enums/CombatState.h"
 
 void UBlasterAnimInstance::NativeInitializeAnimation()
 {
@@ -36,6 +37,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bAiming = Blaster->IsAiming();
 	bRotateRootBone = Blaster->ShouldRotateRootBone();
 	bElimmed = Blaster->IsElimmed();
+	bUseFABRIK = Blaster->GetCombatState() != ECombatState::ECS_Reloading;
 
 	EquippedWeapon = Blaster->GetEquippedWeapon();
 	TurningInPlace = Blaster->GetTurningInPlace();

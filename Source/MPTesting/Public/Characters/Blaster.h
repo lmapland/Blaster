@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "Enums/TurningInPlace.h"
+#include "Enums/CombatState.h"
 #include "Interfaces/InteractWithCrosshairs.h"
 #include "Components/TimelineComponent.h"
 #include "Blaster.generated.h"
@@ -39,12 +40,14 @@ public:
 	AWeapon* GetEquippedWeapon();
 	void PlayFireMontage(bool bAiming);
 	void PlayElimMontage();
+	void PlayReloadMontage();
 	FVector GetHitTarget() const;
 	void PlayHitReactMontage();
 	virtual void OnRep_ReplicatedMovement() override;
 	void Elim();
 	virtual void Destroyed() override;
 	void SetHUDHealth();
+	ECombatState GetCombatState() const;
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
@@ -62,6 +65,7 @@ protected:
 	void FireButtonPressed();
 	void FireButtonReleased();
 	void Equip();
+	void ReloadButtonPressed();
 	void AimOffset(float DeltaTime);
 	void CalculateAO_Pitch();
 	void SimProxiesTurn();
@@ -95,6 +99,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* FireAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* ReloadAction;
 
 
 private:
@@ -123,7 +130,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Widgets, meta = (AllowPrivateAccess = "true"))
 	UWidgetComponent* DisplayNameWidget;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UCombatComponent* CombatComponent2;
 
 	UPROPERTY()
@@ -150,6 +157,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* ElimMontage;
+	
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* ReloadMontage;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
 	float CameraThreshold = 200.f;

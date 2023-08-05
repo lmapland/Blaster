@@ -22,6 +22,8 @@ public:
 	void SetStamina(float Stamina, float MaxStamina);
 	void SetScore(float Score);
 	void SetDefeats(int32 Defeats);
+	void SetWeaponAmmo(int32 Ammo);
+	void SetCarriedAmmo(int32 Ammo);
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthBar;
@@ -34,5 +36,11 @@ public:
 	
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* DefeatsAmount;
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* WeaponAmmoAmount;
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* CarriedAmmoAmount;
 
 };

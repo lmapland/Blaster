@@ -27,11 +27,9 @@ void UBlasterOverlay::SetStamina(float Stamina, float MaxStamina)
 
 void UBlasterOverlay::SetScore(float Score)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("UBlasterOverlay::SetScore(): In Score: %f"), Score);
 	if (ScoreAmount)
 	{
 		const FString ScoreString = FString::Printf(TEXT("%d"), FMath::FloorToInt(Score));
-		//UE_LOG(LogTemp, Warning, TEXT("UBlasterOverlay::SetScore(): Score: [%s]"), *ScoreString);
 		ScoreAmount->SetText(FText::FromString(ScoreString));
 	}
 }
@@ -41,7 +39,25 @@ void UBlasterOverlay::SetDefeats(int32 Defeats)
 	if (DefeatsAmount)
 	{
 		const FString DefeatsString = FString::Printf(TEXT("%d"), Defeats);
-		//UE_LOG(LogTemp, Warning, TEXT("UBlasterOverlay::SetDefeats(): Defeats: [%s]"), *DefeatsString);
 		DefeatsAmount->SetText(FText::FromString(DefeatsString));
+	}
+}
+
+void UBlasterOverlay::SetWeaponAmmo(int32 Ammo)
+{
+	if (WeaponAmmoAmount)
+	{
+		const FString AmmoString = FString::Printf(TEXT("%d"), Ammo);
+		//UE_LOG(LogTemp, Warning, TEXT("UBlasterOverlay::SetWeaponAmmo(): Defeats: [%s]"), *AmmoString);
+		WeaponAmmoAmount->SetText(FText::FromString(AmmoString));
+	}
+}
+
+void UBlasterOverlay::SetCarriedAmmo(int32 Ammo)
+{
+	if (CarriedAmmoAmount)
+	{
+		const FString AmmoString = FString::Printf(TEXT("%d"), Ammo);
+		CarriedAmmoAmount->SetText(FText::FromString(AmmoString));
 	}
 }

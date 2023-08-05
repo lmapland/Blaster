@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Enums/WeaponTypes.h"
 #include "Weapon.generated.h"
 
 UENUM(BlueprintType)
@@ -19,6 +20,9 @@ class USphereComponent;
 class UWidgetComponent;
 class UAnimationAsset;
 class ACasing;
+class ABlaster;
+class ABlasterController;
+class USoundCue;
 
 UCLASS()
 class MPTESTING_API AWeapon : public AActor
@@ -29,10 +33,15 @@ public:
 	AWeapon();
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void SetOwner(AActor* NewOwner) override;
+	virtual void OnRep_Owner() override;
 	void SetPickupWidgetVisibility(bool bIsVisible);
 	void SetWeaponState(EWeaponState State);
 	virtual void Fire(const FVector& HitTarget);
 	void Dropped();
+	void SetHUDAmmo();
+	void AddAmmo(int32 AmountToAdd);
+	void PlayEquipSound(FVector Location);
 	
 	/*
 	* Textures for the weapon crosshairs
@@ -52,6 +61,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = Crosshairs)
 	UTexture2D* CrosshairsBottom;
 
+	UPROPERTY(EditAnywhere, Category = Equip)
+	USoundCue* EquipSound;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -65,6 +77,11 @@ private:
 	UFUNCTION()
 	void OnRep_WeaponState();
 
+	UFUNCTION()
+	void OnRep_Ammo();
+
+	void SpendRound();
+
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	USkeletalMeshComponent* WeaponMesh;
 
@@ -74,8 +91,17 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	UWidgetComponent* PickupWidget;
 
+	UPROPERTY()
+	ABlaster* Blaster;
+
+	UPROPERTY()
+	ABlasterController* BlasterController;
+
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon Properties")
 	EWeaponState WeaponState = EWeaponState::EWS_Initial;
+	
+	UPROPERTY(EditAnywhere, Category = "WeaponProperties")
+	EWeaponType WeaponType = EWeaponType::EWT_AssaultRifle;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 	UAnimationAsset* FireAnimation;
@@ -95,10 +121,19 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
 	bool bAutomatic = true;
 
+	UPROPERTY(ReplicatedUsing = OnRep_Ammo)
+	int32 Ammo = 30;
+
+	int32 MagCapacity = 30;
+
 public:
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() { return WeaponMesh; }
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
 	FORCEINLINE float GetFireDelay() const { return FireDelay; }
 	FORCEINLINE bool IsAutomatic() const { return bAutomatic; }
+	FORCEINLINE bool IsEmpty() const { return Ammo == 0; }
+	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
+	FORCEINLINE int32 GetAmmo() const { return Ammo; }
+	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 };

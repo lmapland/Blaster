@@ -25,12 +25,26 @@ void ABlasterController::SetHUDDefeats(int32 Defeats)
 
 void ABlasterController::SetHUDScore(float Score)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("SetHUDScore(): In Score: %f"), Score);
-
 	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;
 	if (!HUD || !HUD->Overlay) return;
 
 	HUD->Overlay->SetScore(Score);
+}
+
+void ABlasterController::SetHUDWeaponAmmo(int32 Ammo)
+{
+	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;
+	if (!HUD || !HUD->Overlay) return;
+
+	HUD->Overlay->SetWeaponAmmo(Ammo);
+}
+
+void ABlasterController::SetHUDCarriedAmmo(int32 Ammo)
+{
+	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;
+	if (!HUD || !HUD->Overlay) return;
+
+	HUD->Overlay->SetCarriedAmmo(Ammo);
 }
 
 void ABlasterController::OnPossess(APawn* InPawn)

@@ -20,7 +20,7 @@ void ABlasterPlayerState::OnRep_Score()
 	Character = Character == nullptr ? Cast<ABlaster>(GetPawn()) : Character;
 	if (Character && Character->GetBlasterController())
 	{
-		Controller->SetHUDScore(GetScore());
+		Character->GetBlasterController()->SetHUDScore(GetScore());
 	}
 }
 
@@ -29,7 +29,7 @@ void ABlasterPlayerState::OnRep_Defeats()
 	Character = Character == nullptr ? Cast<ABlaster>(GetPawn()) : Character;
 	if (Character && Character->GetBlasterController())
 	{
-		Controller->SetHUDDefeats(Defeats);
+		Character->GetBlasterController()->SetHUDDefeats(Defeats);
 	}
 }
 
@@ -39,7 +39,7 @@ void ABlasterPlayerState::AddToScore(float AmountToAdd)
 	Character = Character == nullptr ? Cast<ABlaster>(GetPawn()) : Character;
 	if (Character && Character->GetBlasterController())
 	{
-		Controller->SetHUDScore(GetScore());
+		Character->GetBlasterController()->SetHUDScore(GetScore());
 	}
 }
 
