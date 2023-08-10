@@ -61,3 +61,12 @@ void UBlasterOverlay::SetCarriedAmmo(int32 Ammo)
 		CarriedAmmoAmount->SetText(FText::FromString(AmmoString));
 	}
 }
+
+void UBlasterOverlay::SetMatchCountdownText(int32 Minutes, int32 Seconds)
+{
+	if (MatchCountdownText)
+	{
+		const FString CountdownString = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
+		MatchCountdownText->SetText(FText::FromString(CountdownString));
+	}
+}

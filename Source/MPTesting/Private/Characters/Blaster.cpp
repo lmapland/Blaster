@@ -71,6 +71,7 @@ void ABlaster::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 	DOREPLIFETIME_CONDITION(ABlaster, OverlappingWeapon, COND_OwnerOnly);
 	DOREPLIFETIME(ABlaster, Health);
 	DOREPLIFETIME(ABlaster, Stamina);
+	DOREPLIFETIME(ABlaster, bDisableGameplay);
 }
 
 void ABlaster::PostInitializeComponents()
@@ -178,6 +179,13 @@ void ABlaster::Destroyed()
 	{
 		ElimBotComponent->DestroyComponent();
 	}
+
+	ABlasterGameMode* GameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(this));
+	bool bMatchNotInProgress = GameMode && GameMode->GetMatchState() != MatchState::InProgress;
+	if (CombatComponent2 && CombatComponent2->EquippedWeapon && bMatchNotInProgress)
+	{
+		CombatComponent2->EquippedWeapon->Destroy();
+	}
 }
 
 void ABlaster::SetHUDHealth()
@@ -209,11 +217,16 @@ void ABlaster::MulticastElim_Implementation()
 
 	GetCharacterMovement()->DisableMovement();
 	GetCharacterMovement()->StopMovementImmediately();
+	bDisableGameplay = true;
+	if (CombatComponent2)
+	{
+		CombatComponent2->FireButtonPressed(false);
+	}
 
 	if (BlasterController)
 	{
 		BlasterController->SetHUDWeaponAmmo(0);
-		DisableInput(BlasterController);
+		//DisableInput(BlasterController);
 	}
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -261,17 +274,6 @@ void ABlaster::BeginPlay()
 	Super::BeginPlay();
 	
 	BlasterController = Cast<ABlasterController>(GetController());
-	if (BlasterController)
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("In BeginPlay(): BlasterController is valid"));
-		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BlasterController->GetLocalPlayer());
-		if (Subsystem)
-		{
-			Subsystem->AddMappingContext(CharMappingContext, 0);
-		}
-
-		BlasterController->SetHUDHealth(Health, MaxHealth);
-	}
 
 	if (HasAuthority())
 	{
@@ -283,6 +285,8 @@ void ABlaster::BeginPlay()
 
 void ABlaster::Move(const FInputActionValue& Value)
 {
+	if (bDisableGameplay) return;
+
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 	const FRotator Rotation = Controller->GetControlRotation();
 	const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -303,14 +307,18 @@ void ABlaster::Look(const FInputActionValue& Value)
 
 void ABlaster::Sprint(const FInputActionValue& Value)
 {
+	if (bDisableGameplay) return;
 }
 
 void ABlaster::EndSprint(const FInputActionValue& Value)
 {
+	if (bDisableGameplay) return;
 }
 
 void ABlaster::CrouchButtonPressed()
 {
+	if (bDisableGameplay) return;
+
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -321,8 +329,23 @@ void ABlaster::CrouchButtonPressed()
 	}
 }
 
+void ABlaster::Jump()
+{
+	if (bDisableGameplay) return;
+
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Super::Jump();
+	}
+}
 void ABlaster::AimButtonPressed()
 {
+	if (bDisableGameplay) return;
+
 	check(CombatComponent2);
 
 	CombatComponent2->SetAiming(true);
@@ -330,6 +353,8 @@ void ABlaster::AimButtonPressed()
 
 void ABlaster::AimButtonReleased()
 {
+	if (bDisableGameplay) return;
+
 	check(CombatComponent2);
 
 	CombatComponent2->SetAiming(false);
@@ -337,6 +362,8 @@ void ABlaster::AimButtonReleased()
 
 void ABlaster::FireButtonPressed()
 {
+	if (bDisableGameplay) return;
+
 	check(CombatComponent2);
 
 	CombatComponent2->FireButtonPressed(true);
@@ -344,6 +371,8 @@ void ABlaster::FireButtonPressed()
 
 void ABlaster::FireButtonReleased()
 {
+	if (bDisableGameplay) return;
+
 	check(CombatComponent2);
 
 	CombatComponent2->FireButtonPressed(false);
@@ -355,6 +384,8 @@ void ABlaster::FireButtonReleased()
 
 void ABlaster::Equip()
 {
+	if (bDisableGameplay) return;
+
 	check(CombatComponent2);
 
 	if (HasAuthority())
@@ -369,6 +400,8 @@ void ABlaster::Equip()
 
 void ABlaster::ReloadButtonPressed()
 {
+	if (bDisableGameplay) return;
+
 	if (CombatComponent2) CombatComponent2->Reload();
 }
 
@@ -573,6 +606,17 @@ void ABlaster::AfterBeginPlay()
 		BlasterController = Cast<ABlasterController>(GetController());
 	}
 
+	if (BlasterController)
+	{
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BlasterController->GetLocalPlayer());
+		if (Subsystem)
+		{
+			Subsystem->AddMappingContext(CharMappingContext, 0);
+		}
+
+		BlasterController->SetHUDHealth(Health, MaxHealth);
+	}
+
 	BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
 	if (BlasterPlayerState)
 	{
@@ -616,6 +660,20 @@ void ABlaster::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	RotateInPlace(DeltaTime);
+	
+	HideCameraIfCharacterClose();
+}
+
+void ABlaster::RotateInPlace(float DeltaTime)
+{
+	if (bDisableGameplay)
+	{
+		bUseControllerRotationYaw = false;
+		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
+		return;
+	}
+
 	if (GetLocalRole() > ENetRole::ROLE_SimulatedProxy && IsLocallyControlled())
 	{
 		AimOffset(DeltaTime);
@@ -629,8 +687,6 @@ void ABlaster::Tick(float DeltaTime)
 		}
 		CalculateAO_Pitch();
 	}
-	
-	HideCameraIfCharacterClose();
 }
 
 void ABlaster::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -658,15 +714,4 @@ void ABlaster::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 }
 
-void ABlaster::Jump()
-{
-	if (bIsCrouched)
-	{
-		UnCrouch();
-	}
-	else
-	{
-		Super::Jump();
-	}
-}
 

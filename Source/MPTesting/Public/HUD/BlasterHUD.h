@@ -23,6 +23,8 @@ public:
 };
 
 class UBlasterOverlay;
+class UAnnouncementWidget;
+
 /**
  * 
  */
@@ -33,15 +35,24 @@ class MPTESTING_API ABlasterHUD : public AHUD
 	
 public:
 	virtual void DrawHUD() override;
+	void AddCharacterOverlay();
+	void AddAnnouncement();
 
 	UPROPERTY(EditAnywhere, Category = "Player Stats")
 	TSubclassOf<UUserWidget> BlasterOverlayClass;
 
+	UPROPERTY()
 	UBlasterOverlay* Overlay;
+
+	UPROPERTY(EditAnywhere, Category = "Announcements")
+	TSubclassOf<UUserWidget> AnnouncementClass;
+	
+	UPROPERTY()
+	UAnnouncementWidget* Announcement;
+
 
 protected:
 	virtual void BeginPlay() override;
-	void AddCharacterOverlay();
 
 private:
 	void DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVector2D Spread, FLinearColor Color);

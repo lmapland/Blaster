@@ -52,6 +52,9 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
 
+	UPROPERTY(Replicated)
+	bool bDisableGameplay = false;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -117,6 +120,7 @@ private:
 	void ElimTimerFinished();
 	void StartDissolve();
 	void AfterBeginPlay();
+	void RotateInPlace(float DeltaTime);
 
 	UFUNCTION()
 	void UpdateDissolveMaterial(float DissolveValue);
@@ -237,4 +241,6 @@ public:
 	FORCEINLINE bool ShouldRotateRootBone() const { return bRotateRootBone; }
 	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 	FORCEINLINE ABlasterController* GetBlasterController() const { return BlasterController; }
+	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent2; }
+	FORCEINLINE bool GameplayIsDisabled() const { return bDisableGameplay; }
 };
