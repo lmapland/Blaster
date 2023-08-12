@@ -52,6 +52,9 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void ShowSniperScope(bool bShowScope);
+
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
 

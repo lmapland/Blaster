@@ -46,22 +46,22 @@ public:
 	/*
 	* Textures for the weapon crosshairs
 	*/
-	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Crosshairs")
 	UTexture2D* CrosshairsCenter;
 	
-	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Crosshairs")
 	UTexture2D* CrosshairsLeft;
 
-	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Crosshairs")
 	UTexture2D* CrosshairsRight;
 
-	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Crosshairs")
 	UTexture2D* CrosshairsTop;
 	
-	UPROPERTY(EditAnywhere, Category = Crosshairs)
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Crosshairs")
 	UTexture2D* CrosshairsBottom;
 
-	UPROPERTY(EditAnywhere, Category = Equip)
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Equip")
 	USoundCue* EquipSound;
 
 protected:
@@ -97,33 +97,34 @@ private:
 	UPROPERTY()
 	ABlasterController* BlasterController;
 
-	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon Properties")
+	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon Properties | Default")
 	EWeaponState WeaponState = EWeaponState::EWS_Initial;
 	
-	UPROPERTY(EditAnywhere, Category = "WeaponProperties")
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Default")
 	EWeaponType WeaponType = EWeaponType::EWT_AssaultRifle;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Firing")
 	UAnimationAsset* FireAnimation;
 	
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Default")
 	TSubclassOf<ACasing> CasingClass;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Default")
 	float ZoomedFOV = 30.f;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Default")
 	float ZoomInterpSpeed = 20.f;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Firing")
 	float FireDelay = .2f;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Firing")
 	bool bAutomatic = true;
 
-	UPROPERTY(ReplicatedUsing = OnRep_Ammo)
+	UPROPERTY(ReplicatedUsing = OnRep_Ammo, EditAnywhere, Category = "Weapon Properties | Default")
 	int32 Ammo = 30;
 
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Default")
 	int32 MagCapacity = 30;
 
 public:

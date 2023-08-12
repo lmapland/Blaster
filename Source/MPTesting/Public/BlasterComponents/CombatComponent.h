@@ -9,8 +9,6 @@
 #include "Enums/CombatState.h"
 #include "CombatComponent.generated.h"
 
-constexpr auto TRACE_LENGTH = 80000.f;
-
 class ABlaster;
 class ABlasterController;
 class ABlasterHUD;
@@ -135,6 +133,24 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Ammo)
 	int32 StartingARAmmo = 30;
+
+	UPROPERTY(EditAnywhere, Category = Ammo)
+	int32 StartingRocketAmmo = 0;
+	
+	UPROPERTY(EditAnywhere, Category = Ammo)
+	int32 StartingPistolAmmo = 0;
+	
+	UPROPERTY(EditAnywhere, Category = Ammo)
+	int32 StartingSMGAmmo = 10;
+	
+	UPROPERTY(EditAnywhere, Category = Ammo)
+	int32 StartingShotgunAmmo = 10;
+	
+	UPROPERTY(EditAnywhere, Category = Ammo)
+	int32 StartingSniperRifleAmmo = 10;
+	
+	UPROPERTY(EditAnywhere, Category = Ammo)
+	int32 StartingGrenadeLauncherAmmo = 8;
 
 	TMap<EWeaponType, int32> CarriedAmmoMap;
 

@@ -10,6 +10,8 @@ class UBoxComponent;
 class UProjectileMovementComponent;
 class UParticleSystemComponent;
 class USoundCue;
+class UNiagaraSystem;
+class UNiagaraComponent;
 
 UCLASS()
 class MPTESTING_API AProjectile : public AActor
@@ -27,28 +29,60 @@ protected:
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	UPROPERTY(EditAnywhere, Category = Damage)
-	float Damage = 1.f;
+	void SpawnTrailSystem();
+	void StartDestroyTimer();
+	void DestroyTimerFinished();
+	void ApplyRadialDamage();
+
+	/* Damage value used for direct damage and also the BaseDamage value used for Radial Damage */
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Damage")
+	float Damage = 10.f;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Radial Damage")
+	float DamageMinimum = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Radial Damage")
+	float InnerRadius = 500.f;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Radial Damage")
+	float OuterRadius = 200.f;
+
+	/* 1.f means linear damage falloff */
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Radial Damage")
+	float DamageFalloffExp = 1.f;
+	
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* ProjectileMesh;
 
 	UPROPERTY()
 	AController* OwnerController;
 
-private:
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Impact");
+	UParticleSystem* ImpactParticles;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Impact");
+	USoundCue* ImpactSound;
+
 	UPROPERTY(EditAnywhere);
 	UBoxComponent* CollisionBox;
 
 	UPROPERTY(VisibleAnywhere);
 	UProjectileMovementComponent* ProjectileMovementComponent;
+	
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Trail")
+	UNiagaraSystem* TrailSystem;
 
-	UPROPERTY(EditAnywhere);
+	UPROPERTY()
+	UNiagaraComponent* TrailSystemComponent;
+
+private:
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Tracer");
 	UParticleSystem* Tracer;
 
 	UParticleSystemComponent* TracerComponent;
 	
-	UPROPERTY(EditAnywhere);
-	UParticleSystem* ImpactParticles;
+	FTimerHandle DestroyTimer;
 
-	UPROPERTY(EditAnywhere);
-	USoundCue* ImpactSound;
-
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Trail")
+	float DestroyTime = 3.f;
 };
