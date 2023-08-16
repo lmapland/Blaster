@@ -296,6 +296,21 @@ void ABlasterController::SetHUDAnnouncementCountdown(float CountdownTime)
 	HUD->Announcement->SetWarmupTime(Minutes, FMath::FloorToInt(CountdownTime - (Minutes * 60)));
 }
 
+void ABlasterController::SetHUDGrenades(int32 Grenades)
+{
+	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;
+
+	if (HUD && HUD->Overlay)
+	{
+		HUD->Overlay->SetGrenadesText(Grenades);
+	}
+	else
+	{
+		bInitializeCharacterOverlay = true;
+		HUDGrenades = Grenades;
+	}
+}
+
 void ABlasterController::SetHUDTime()
 {
 	float TimeLeft = 0.f;
@@ -340,6 +355,7 @@ void ABlasterController::PollInit()
 				Overlay->SetHealth(HUDHealth, HUDMaxHealth);
 				Overlay->SetDefeats(HUDDefeats);
 				Overlay->SetScore(HUDScore);
+				Overlay->SetGrenadesText(HUDScore);
 			}
 		}
 	}

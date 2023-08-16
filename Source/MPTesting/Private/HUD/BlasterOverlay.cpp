@@ -70,3 +70,12 @@ void UBlasterOverlay::SetMatchCountdownText(int32 Minutes, int32 Seconds)
 		MatchCountdownText->SetText(FText::FromString(CountdownString));
 	}
 }
+
+void UBlasterOverlay::SetGrenadesText(int32 Grenades)
+{
+	if (GrenadesText)
+	{
+		const FString GrenadesString = FString::Printf(TEXT("%d"), Grenades);
+		GrenadesText->SetText(FText::FromString(GrenadesString));
+	}
+}

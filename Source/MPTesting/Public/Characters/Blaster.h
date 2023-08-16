@@ -41,6 +41,7 @@ public:
 	void PlayFireMontage(bool bAiming);
 	void PlayElimMontage();
 	void PlayReloadMontage();
+	void PlayThrowGrenadeMontage();
 	FVector GetHitTarget() const;
 	void PlayHitReactMontage();
 	virtual void OnRep_ReplicatedMovement() override;
@@ -48,12 +49,16 @@ public:
 	virtual void Destroyed() override;
 	void SetHUDHealth();
 	ECombatState GetCombatState() const;
+	void JumpToShotgunReloadEnd();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void ShowSniperScope(bool bShowScope);
+
+	void SetAttachedGrenadeVisibility(bool bIsVisible);
+	FVector GetGrenadeLocation();
 
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
@@ -72,6 +77,7 @@ protected:
 	void FireButtonReleased();
 	void Equip();
 	void ReloadButtonPressed();
+	void GrenadeButtonPressed();
 	void AimOffset(float DeltaTime);
 	void CalculateAO_Pitch();
 	void SimProxiesTurn();
@@ -108,6 +114,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* ReloadAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* ThrowGrenadeAction;
 
 
 private:
@@ -167,6 +176,9 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* ReloadMontage;
+	
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* ThrowGrenadeMontage;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
 	float CameraThreshold = 200.f;
@@ -234,6 +246,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Initialization)
 	float AfterBeginPlayTime = .1f;
+
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* AttachedGrenade;
 
 
 public:

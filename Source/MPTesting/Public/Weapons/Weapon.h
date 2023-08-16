@@ -42,6 +42,8 @@ public:
 	void SetHUDAmmo();
 	void AddAmmo(int32 AmountToAdd);
 	void PlayEquipSound(FVector Location);
+
+	void SetCustomDepthEnabled(bool bEnabled);
 	
 	/*
 	* Textures for the weapon crosshairs
@@ -134,6 +136,7 @@ public:
 	FORCEINLINE float GetFireDelay() const { return FireDelay; }
 	FORCEINLINE bool IsAutomatic() const { return bAutomatic; }
 	FORCEINLINE bool IsEmpty() const { return Ammo == 0; }
+	FORCEINLINE bool IsFull() const { return Ammo == MagCapacity; }
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
 	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }

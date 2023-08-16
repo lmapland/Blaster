@@ -13,6 +13,7 @@ class ABlaster;
 class ABlasterController;
 class ABlasterHUD;
 class AWeapon;
+class AProjectile;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MPTESTING_API UCombatComponent : public UActorComponent
@@ -29,9 +30,23 @@ public:
 	void Reload();
 
 	UFUNCTION(BlueprintCallable)
+	void ShotgunShellReload();
+
+	void UpdateShotgunAmmoValues();
+
+	UFUNCTION(BlueprintCallable)
 	void FinishReloading();
 
 	void FireButtonPressed(bool bPressed);
+
+	UFUNCTION(BlueprintCallable)
+	void ThrowGrenadeFinished();
+
+	UFUNCTION(BlueprintCallable)
+	void LaunchGrenade();
+
+	UFUNCTION(Server, Reliable)
+	void ServerLaunchGrenade(const FVector_NetQuantize& Target);
 
 protected:
 	virtual void BeginPlay() override;
@@ -56,15 +71,25 @@ protected:
 	void MulticastFire(const FVector_NetQuantize& TraceHitTarget);
 
 	void TraceUnderCrosshairs(FHitResult& HitResult);
-
 	void SetHUDCrosshairs(float DeltaTime);
 
 	UFUNCTION(Server, Reliable)
 	void ServerReload();
 
 	void HandleReload();
+	void ThrowGrenade();
+
+	UFUNCTION(Server, Reliable)
+	void ServerThrowGrenade();
+
+	void AttachActorToRightHand(AWeapon* ToAttach);
+	void AttachActorToLeftHand(AWeapon* ToAttach);
+	void UpdateCarriedAmmo();
 
 	int32 AmountToReload();
+
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
+	TSubclassOf<AProjectile> GrenadeClass;
 
 private:
 	void InterpFOV(float DeltaTime);
@@ -74,6 +99,10 @@ private:
 	bool CanFire();
 	void InitializeCarriedAmmo();
 	void UpdateAmmoValues();
+	void UpdateHUDGrenades();
+
+	UFUNCTION()
+	void OnRep_Grenades();
 
 	UPROPERTY()
 	ABlaster* Character;
@@ -90,10 +119,10 @@ private:
 	UPROPERTY(Replicated)
 	bool bAiming;
 
-	UPROPERTY(EditAnywhere, Category = Movement)
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Movement")
 	float BaseWalkSpeed = 600.f;
 
-	UPROPERTY(EditAnywhere, Category = Movement)
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Movement")
 	float AimWalkSpeed = 450.f;
 
 	bool bFireButtonPressed = false;
@@ -103,12 +132,12 @@ private:
 	// Field of view when not aiming; set to the camera's base FOV in BeginPlay
 	float DefaultFOV;
 
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Combat")
 	float ZoomedFOV = 30.f;
 
 	float CurrentFOV;
-	
-	UPROPERTY(EditAnywhere, Category = Combat)
+
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Combat")
 	float ZoomInterpSpeed = 20.f;
 
 	/*
@@ -131,29 +160,38 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_CarriedAmmo)
 	int32 CarriedAmmo;
 
-	UPROPERTY(EditAnywhere, Category = Ammo)
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
 	int32 StartingARAmmo = 30;
 
-	UPROPERTY(EditAnywhere, Category = Ammo)
-	int32 StartingRocketAmmo = 0;
-	
-	UPROPERTY(EditAnywhere, Category = Ammo)
-	int32 StartingPistolAmmo = 0;
-	
-	UPROPERTY(EditAnywhere, Category = Ammo)
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
+	int32 StartingRocketAmmo = 3;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
+	int32 StartingPistolAmmo = 25;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
 	int32 StartingSMGAmmo = 10;
-	
-	UPROPERTY(EditAnywhere, Category = Ammo)
+
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
 	int32 StartingShotgunAmmo = 10;
-	
-	UPROPERTY(EditAnywhere, Category = Ammo)
+
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
 	int32 StartingSniperRifleAmmo = 10;
-	
-	UPROPERTY(EditAnywhere, Category = Ammo)
+
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
 	int32 StartingGrenadeLauncherAmmo = 8;
 
 	TMap<EWeaponType, int32> CarriedAmmoMap;
 
+	UPROPERTY(ReplicatedUsing = OnRep_Grenades, EditAnywhere, Category = "Combat Properties | Ammo")
+	int32 Grenades = 3;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
+	int32 MaxGrenades = 10;
+
 	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
 	ECombatState CombatState = ECombatState::ECS_Unoccupied;
+
+	public:
+		FORCEINLINE int32 GetGrenadeCount() const { return Grenades; }
 };

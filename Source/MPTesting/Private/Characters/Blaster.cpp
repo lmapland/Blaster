@@ -44,6 +44,10 @@ ABlaster::ABlaster()
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
 
+	AttachedGrenade = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HandGrenade"));
+	AttachedGrenade->SetupAttachment(GetMesh(), FName("GrenadeSocket"));
+	AttachedGrenade->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 850.f, 0.f);
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
@@ -135,26 +139,35 @@ void ABlaster::PlayReloadMontage()
 		case EWeaponType::EWT_AssaultRifle:
 			SectionName = FName("Rifle");
 			break;
-		case EWeaponType::EWT_Pistol:
-			SectionName = FName("Rifle");
-			break;
 		case EWeaponType::EWT_RocketLauncher:
-			SectionName = FName("Rifle");
+			SectionName = FName("RocketLauncher");
+			break;
+		case EWeaponType::EWT_Pistol:
+			SectionName = FName("Pistol");
 			break;
 		case EWeaponType::EWT_SubmachineGun:
-			SectionName = FName("Rifle");
+			SectionName = FName("Pistol"); // Pistol reload animation works for SMG as well
 			break;
 		case EWeaponType::EWT_Shotgun:
-			SectionName = FName("Rifle");
+			SectionName = FName("Shotgun");
 			break;
 		case EWeaponType::EWT_SniperRifle:
-			SectionName = FName("Rifle");
+			SectionName = FName("SniperRifle");
 			break;
 		case EWeaponType::EWT_GrenadeLauncher:
-			SectionName = FName("Rifle");
+			SectionName = FName("GrenadeLauncher");
 			break;
 		}
 		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void ABlaster::PlayThrowGrenadeMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && ThrowGrenadeMontage)
+	{
+		AnimInstance->Montage_Play(ThrowGrenadeMontage);
 	}
 }
 
@@ -212,6 +225,15 @@ ECombatState ABlaster::GetCombatState() const
 {
 	if (!CombatComponent2) return ECombatState::ECS_Unoccupied;
 	return CombatComponent2->CombatState;
+}
+
+void ABlaster::JumpToShotgunReloadEnd()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && ReloadMontage)
+	{
+		AnimInstance->Montage_JumpToSection("ShotgunEnd");
+	}
 }
 
 void ABlaster::Elim()
@@ -300,6 +322,8 @@ void ABlaster::BeginPlay()
 	{
 		OnTakeAnyDamage.AddDynamic(this, &ABlaster::ReceiveDamage);
 	}
+
+	SetAttachedGrenadeVisibility(false);
 
 	GetWorldTimerManager().SetTimer(AfterBeginPlayTimer, this, &ABlaster::AfterBeginPlay, AfterBeginPlayTime);
 }
@@ -426,6 +450,31 @@ void ABlaster::ReloadButtonPressed()
 	if (CombatComponent2) CombatComponent2->Reload();
 }
 
+void ABlaster::GrenadeButtonPressed()
+{
+	if (CombatComponent2)
+	{
+		CombatComponent2->ThrowGrenade();
+	}
+}
+
+void ABlaster::SetAttachedGrenadeVisibility(bool bIsVisible)
+{
+	if (AttachedGrenade)
+	{
+		AttachedGrenade->SetVisibility(bIsVisible);
+	}
+}
+
+FVector ABlaster::GetGrenadeLocation()
+{
+	if (AttachedGrenade)
+	{
+		return AttachedGrenade->GetComponentLocation();
+	}
+	return FVector();
+}
+
 void ABlaster::AimOffset(float DeltaTime)
 {
 	if (CombatComponent2 && CombatComponent2->EquippedWeapon == nullptr) return;
@@ -509,6 +558,8 @@ void ABlaster::SimProxiesTurn()
 
 void ABlaster::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
 {
+	if (bElimmed) return;
+
 	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
 	if (IsLocallyControlled() && BlasterController)	BlasterController->SetHUDHealth(Health, MaxHealth);
 
@@ -636,14 +687,13 @@ void ABlaster::AfterBeginPlay()
 		}
 
 		BlasterController->SetHUDHealth(Health, MaxHealth);
+		BlasterController->SetHUDGrenades(CombatComponent2->GetGrenadeCount());
 	}
 
 	BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
 	if (BlasterPlayerState)
 	{
 		BlasterPlayerState->AddToScore(0.f);
-
-		//UE_LOG(LogTemp, Warning, TEXT("In Blaster calling AddToDefeats(0)"));
 		BlasterPlayerState->AddToDefeats(0);
 	}
 }
@@ -722,6 +772,7 @@ void ABlaster::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(EquipAction, ETriggerEvent::Started, this, &ABlaster::Equip);
 		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ABlaster::ReloadButtonPressed);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABlaster::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(ThrowGrenadeAction, ETriggerEvent::Started, this, &ABlaster::GrenadeButtonPressed);
 
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABlaster::Sprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABlaster::EndSprint);

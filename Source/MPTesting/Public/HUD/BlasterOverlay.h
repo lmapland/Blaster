@@ -25,6 +25,7 @@ public:
 	void SetWeaponAmmo(int32 Ammo);
 	void SetCarriedAmmo(int32 Ammo);
 	void SetMatchCountdownText(int32 Minutes, int32 Seconds);
+	void SetGrenadesText(int32 Grenades);
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthBar;
@@ -46,5 +47,8 @@ public:
 	
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* MatchCountdownText;
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* GrenadesText;
 
 };
