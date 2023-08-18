@@ -11,6 +11,7 @@
 #include "Net/UnrealNetwork.h"
 #include "Weapons/Weapon.h"
 #include "BlasterComponents/CombatComponent.h"
+#include "BlasterComponents/BuffComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -65,6 +66,9 @@ ABlaster::ABlaster()
 	CombatComponent2 = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent2"));
 	CombatComponent2->SetIsReplicated(true);
 
+	BuffComponent2 = CreateDefaultSubobject<UBuffComponent>(TEXT("BuffComponent"));
+	BuffComponent2->SetIsReplicated(true);
+
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
 }
 
@@ -74,6 +78,7 @@ void ABlaster::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetime
 
 	DOREPLIFETIME_CONDITION(ABlaster, OverlappingWeapon, COND_OwnerOnly);
 	DOREPLIFETIME(ABlaster, Health);
+	DOREPLIFETIME(ABlaster, Shield);
 	DOREPLIFETIME(ABlaster, Stamina);
 	DOREPLIFETIME(ABlaster, bDisableGameplay);
 }
@@ -85,6 +90,11 @@ void ABlaster::PostInitializeComponents()
 	if (CombatComponent2)
 	{
 		CombatComponent2->Character = this;
+	}
+
+	if (BuffComponent2)
+	{
+		BuffComponent2->Character = this;
 	}
 }
 
@@ -221,6 +231,11 @@ void ABlaster::SetHUDHealth()
 	if (IsLocallyControlled() && BlasterController)	BlasterController->SetHUDHealth(Health, MaxHealth);
 }
 
+void ABlaster::SetHUDShield()
+{
+	if (IsLocallyControlled() && BlasterController)	BlasterController->SetHUDShield(Shield, MaxShield);
+}
+
 ECombatState ABlaster::GetCombatState() const
 {
 	if (!CombatComponent2) return ECombatState::ECS_Unoccupied;
@@ -234,6 +249,17 @@ void ABlaster::JumpToShotgunReloadEnd()
 	{
 		AnimInstance->Montage_JumpToSection("ShotgunEnd");
 	}
+}
+
+void ABlaster::UpdateMovementSpeedByPercent(float Percent)
+{
+	GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed * Percent;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = BaseCrouchSpeed * Percent;
+}
+
+void ABlaster::UpdateJumpVelocityByPercent(float Percent)
+{
+	GetCharacterMovement()->JumpZVelocity = BaseJumpVelocity * Percent;
 }
 
 void ABlaster::Elim()
@@ -303,7 +329,6 @@ void ABlaster::SetOverlappingWeapon(AWeapon* Weapon)
 		OverlappingWeapon->SetPickupWidgetVisibility(false);
 	}
 
-	//UE_LOG(LogTemp, Warning, TEXT("Setting OverlappingWeapon"));
 	OverlappingWeapon = Weapon;
 	
 	if (IsLocallyControlled() && OverlappingWeapon)
@@ -560,10 +585,9 @@ void ABlaster::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageTy
 {
 	if (bElimmed) return;
 
-	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
-	if (IsLocallyControlled() && BlasterController)	BlasterController->SetHUDHealth(Health, MaxHealth);
+	HandleDamage(Damage);
 
-	if (Health == 0.f)
+	if (Health == 0.f) // Kill the player
 	{
 		ABlasterGameMode* BlasterGameMode = GetWorld()->GetAuthGameMode<ABlasterGameMode>();
 		if (BlasterGameMode)
@@ -571,7 +595,6 @@ void ABlaster::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageTy
 			ABlasterController* AttackerController = Cast<ABlasterController>(InstigatorController);
 			if (!BlasterController)
 			{
-				//UE_LOG(LogTemp, Warning, TEXT("In Blaster::ReceiveDamage(): BlasterController is null - casting"));
 				BlasterController = Cast<ABlasterController>(GetController());
 			}
 			BlasterGameMode->PlayerEliminated(this, BlasterController, AttackerController);
@@ -581,6 +604,57 @@ void ABlaster::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageTy
 	{
 		PlayHitReactMontage();
 	}
+}
+
+void ABlaster::HandleDamage(float Damage)
+{
+	//UE_LOG(LogTemp, Warning, TEXT("HandleDamage(): (Pre) Damage: %f, Shield: %f, Health: %f"), Damage, Shield, Health);
+	if (Damage >= Shield + Health)
+	{
+		Shield = 0.f;
+		Health = 0.f;
+	}
+	else if (Damage >= Shield)
+	{
+		Health = FMath::Clamp(Health - (Damage - Shield), 0.f, MaxHealth);
+		Shield = 0.f;
+	}
+	else // Damage < Shield
+	{
+		Shield = FMath::Clamp(Shield - Damage, 0.f, MaxShield);
+	}
+
+	SetHUDHealth();
+	SetHUDShield();
+}
+
+void ABlaster::UpdateHealth(float Amount)
+{
+	//UE_LOG(LogTemp, Warning, TEXT("HandleHeal(): (Pre) Amount: %f, Shield: %f, Health: %f"), Amount, Shield, Health);
+	if (Amount > (MaxHealth - Health) + (MaxShield - Shield))
+	{
+		Health = MaxHealth;
+		Shield = MaxShield;
+	}
+	else if (Amount >= (MaxHealth - Health))
+	{
+		Shield = FMath::Clamp(Shield + (Amount - (MaxHealth - Health)), 0.f, MaxShield);
+		Health = MaxHealth;
+	}
+	else // Amount < (MaxHealth - Health)
+	{
+		Health = FMath::Clamp(Health + Amount, 0.f, MaxHealth);
+	}
+
+	SetHUDHealth();
+	SetHUDShield();
+}
+
+void ABlaster::ReplenishShield(float Amount)
+{
+	Shield = FMath::Clamp(Shield + Amount, 0.f, MaxShield);
+
+	SetHUDShield();
 }
 
 void ABlaster::TurnInPlace(float DeltaTime)
@@ -686,7 +760,8 @@ void ABlaster::AfterBeginPlay()
 			Subsystem->AddMappingContext(CharMappingContext, 0);
 		}
 
-		BlasterController->SetHUDHealth(Health, MaxHealth);
+		SetHUDHealth();
+		SetHUDShield();
 		BlasterController->SetHUDGrenades(CombatComponent2->GetGrenadeCount());
 	}
 
@@ -696,6 +771,13 @@ void ABlaster::AfterBeginPlay()
 		BlasterPlayerState->AddToScore(0.f);
 		BlasterPlayerState->AddToDefeats(0);
 	}
+
+	if (GetMovementComponent())
+	{
+		BaseWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+		BaseCrouchSpeed = GetCharacterMovement()->MaxWalkSpeedCrouched;
+		BaseJumpVelocity = GetCharacterMovement()->JumpZVelocity;
+	}
 }
 
 void ABlaster::UpdateDissolveMaterial(float DissolveValue)
@@ -704,16 +786,20 @@ void ABlaster::UpdateDissolveMaterial(float DissolveValue)
 	{
 		DynamicDissolveMaterialInstance->SetScalarParameterValue(TEXT("Dissolve"), DissolveValue);
 	}
-
 }
 
-void ABlaster::OnRep_Health()
+void ABlaster::OnRep_Health(float PreviousHealth)
 {
-	if (IsLocallyControlled() && BlasterController)
-	{
-		BlasterController->SetHUDHealth(Health, MaxHealth);
-	}
-	PlayHitReactMontage();
+	SetHUDHealth();
+
+	if (Health < PreviousHealth) PlayHitReactMontage();
+}
+
+void ABlaster::OnRep_Shield(float PreviousShield)
+{
+	SetHUDShield();
+
+	if (Shield < PreviousShield) PlayHitReactMontage();
 }
 
 void ABlaster::OnRep_Stamina()

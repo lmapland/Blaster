@@ -19,6 +19,7 @@ class MPTESTING_API ABlasterController : public APlayerController
 	GENERATED_BODY()
 public:
 	void SetHUDHealth(float Health, float MaxHealth);
+	void SetHUDShield(float Shield, float MaxShield);
 	void SetHUDDefeats(int32 Defeats);
 	void SetHUDScore(float Score);
 	void SetHUDWeaponAmmo(int32 Ammo);
@@ -88,6 +89,8 @@ private:
 	bool bInitializeCharacterOverlay = false;
 	float HUDHealth;
 	float HUDMaxHealth;
+	float HUDShield;
+	float HUDMaxShield;
 	float HUDScore;
 	int32 HUDDefeats;
 	int32 HUDGrenades;

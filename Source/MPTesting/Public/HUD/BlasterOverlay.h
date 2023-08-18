@@ -19,6 +19,7 @@ class MPTESTING_API UBlasterOverlay : public UUserWidget
 	
 public:
 	void SetHealth(float Health, float MaxHealth);
+	void SetShield(float Shield, float MaxShield);
 	void SetStamina(float Stamina, float MaxStamina);
 	void SetScore(float Score);
 	void SetDefeats(int32 Defeats);
@@ -32,6 +33,12 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* HealthText;
+	
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* ShieldBar;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* ShieldText;
 	
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ScoreAmount;

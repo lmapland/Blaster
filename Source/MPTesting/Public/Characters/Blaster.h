@@ -19,6 +19,7 @@ class UWidgetComponent;
 class USoundCue;
 class AWeapon;
 class UCombatComponent;
+class UBuffComponent;
 class ABlasterController;
 class ABlasterPlayerState;
 
@@ -48,8 +49,22 @@ public:
 	void Elim();
 	virtual void Destroyed() override;
 	void SetHUDHealth();
+	void SetHUDShield();
 	ECombatState GetCombatState() const;
 	void JumpToShotgunReloadEnd();
+
+	/* For adding health to the player. Cannot be used for removing health from the player.
+	 * By default it increases the shield value as well after Health is maxed out. */
+	void UpdateHealth(float Amount);
+
+	/* Increases only the Shield value and ignores the Health value. */
+	void ReplenishShield(float Amount);
+
+	/* Updates the character's base movement. DOES NOT STACK. If this function is called a second time, the new percent will overwrite the old percent. */
+	void UpdateMovementSpeedByPercent(float Percent);
+
+	/* Updates the character's base jump velocity. DOES NOT STACK. */
+	void UpdateJumpVelocityByPercent(float Percent);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
@@ -84,6 +99,9 @@ protected:
 
 	UFUNCTION()
 	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
+
+	/* For removing health from the player; cannot be used for increasing the player's health */
+	void HandleDamage(float Damage);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* CharMappingContext;
@@ -148,6 +166,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UCombatComponent* CombatComponent2;
+	
+	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
+	UBuffComponent* BuffComponent2;
 
 	UPROPERTY()
 	ABlasterController* BlasterController;
@@ -195,7 +216,10 @@ private:
 	*/
 
 	UFUNCTION()
-	void OnRep_Health();
+	void OnRep_Health(float PreviousHealth);
+	
+	UFUNCTION()
+	void OnRep_Shield(float PreviousShield);
 
 	UFUNCTION()
 	void OnRep_Stamina();
@@ -205,6 +229,12 @@ private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_Health, EditAnywhere, Category = "Player Stats");
 	float Health = 100.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Shield, EditAnywhere, Category = "Player Stats");
+	float Shield = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats");
+	float MaxShield = 50.f;
 
 	UPROPERTY(EditAnywhere, Category = "Player Stats");
 	float MaxStamina = 100.f;
@@ -250,6 +280,13 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* AttachedGrenade;
 
+	/* These Movement Component variables can be changed throughout the gameplay,
+	 * but we also want to be able to set the Movement Component variables back to their original values,
+	 * so we will save off the base values as the Character is created.
+	 */
+	float BaseWalkSpeed = 400.f;
+	float BaseCrouchSpeed = 200.f;
+	float BaseJumpVelocity = 100.f;
 
 public:
 	FORCEINLINE float GetAOYaw() const { return AO_Yaw; }
@@ -260,5 +297,6 @@ public:
 	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 	FORCEINLINE ABlasterController* GetBlasterController() const { return BlasterController; }
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent2; }
+	FORCEINLINE UBuffComponent* GetBuffComponent() const { return BuffComponent2; }
 	FORCEINLINE bool GameplayIsDisabled() const { return bDisableGameplay; }
 };

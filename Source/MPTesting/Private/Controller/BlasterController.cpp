@@ -218,6 +218,22 @@ void ABlasterController::SetHUDHealth(float Health, float MaxHealth)
 	}
 }
 
+void ABlasterController::SetHUDShield(float Shield, float MaxShield)
+{
+	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;
+
+	if (HUD && HUD->Overlay)
+	{
+		HUD->Overlay->SetShield(Shield, MaxShield);
+	}
+	else
+	{
+		bInitializeCharacterOverlay = true;
+		HUDShield = Shield;
+		HUDMaxShield = MaxShield;
+	}
+}
+
 void ABlasterController::SetHUDDefeats(int32 Defeats)
 {
 	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;

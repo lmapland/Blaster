@@ -15,6 +15,16 @@ void UBlasterOverlay::SetHealth(float Health, float MaxHealth)
 	}
 }
 
+void UBlasterOverlay::SetShield(float Shield, float MaxShield)
+{
+	if (ShieldBar && ShieldText)
+	{
+		ShieldBar->SetPercent(Shield / MaxShield);
+		const FString ShieldString = FString::Printf(TEXT("%d/%d"), FMath::CeilToInt(Shield), FMath::CeilToInt(MaxShield));
+		ShieldText->SetText(FText::FromString(ShieldString));
+	}
+}
+
 void UBlasterOverlay::SetStamina(float Stamina, float MaxStamina)
 {
 	/*if (StaminaBar && StaminaText)

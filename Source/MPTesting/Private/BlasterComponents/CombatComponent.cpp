@@ -20,6 +20,29 @@ UCombatComponent::UCombatComponent()
 
 }
 
+void UCombatComponent::PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount)
+{
+	if (!Character) return;
+
+	if (CarriedAmmoMap.Contains(WeaponType))
+	{
+		CarriedAmmoMap[WeaponType] = FMath::Clamp(CarriedAmmoMap[WeaponType] + AmmoAmount, 0, MaxCarriedAmmo);
+		UpdateCarriedAmmo();
+	}
+	else
+	{
+		CarriedAmmoMap.Emplace(WeaponType, AmmoAmount);
+	}
+
+	if (EquippedWeapon && EquippedWeapon->IsEmpty() && EquippedWeapon->GetWeaponType() == WeaponType)
+	{
+		Reload();
+	}
+
+	Controller = Controller == nullptr ? Character->GetBlasterController() : Controller;
+	if (Controller) Controller->SetHUDCarriedAmmo(CarriedAmmo);
+}
+
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
