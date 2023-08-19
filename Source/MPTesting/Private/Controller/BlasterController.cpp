@@ -35,6 +35,30 @@ void ABlasterController::Tick(float DeltaTime)
 	SetHUDTime();
 	CheckTimeSync(DeltaTime);
 	PollInit();
+	CheckPing(DeltaTime);
+}
+
+void ABlasterController::CheckPing(float DeltaTime)
+{
+	HighPingRunningTime += DeltaTime;
+	if (HighPingRunningTime > CheckPingFrequency)
+	{
+		PlayerState = PlayerState ? GetPlayerState<APlayerState>() : PlayerState;
+		if (PlayerState)
+		{
+			// GetCompressedPing() returns a compressed value; must multiply by 4 to get the real value
+			if (PlayerState->GetCompressedPing() * 4 > HighPingThreshold) ShowHighPingWarning(true);
+		}
+		HighPingRunningTime = 0.f;
+	}
+
+	if (bHighPingWarningIsRunning) HighPingWarningRunningTime += DeltaTime;
+	if (HighPingWarningRunningTime > HighPingWarningDuration)
+	{
+		ShowHighPingWarning(false);
+		HighPingWarningRunningTime = 0.f;
+		bHighPingWarningIsRunning = false;
+	}
 }
 
 void ABlasterController::CheckTimeSync(float DeltaTime)
@@ -44,6 +68,17 @@ void ABlasterController::CheckTimeSync(float DeltaTime)
 	{
 		ServerRequestServerTime(GetWorld()->GetTimeSeconds());
 		TimeSyncRunningTime = 0.f;
+	}
+}
+
+void ABlasterController::ShowHighPingWarning(bool bShouldShow)
+{
+	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;
+
+	if (HUD && HUD->Overlay)
+	{
+		HUD->Overlay->SetHighPingWarningVisible(bShouldShow);
+		if (bShouldShow) bHighPingWarningIsRunning = true;
 	}
 }
 

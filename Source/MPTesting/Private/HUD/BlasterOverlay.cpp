@@ -4,6 +4,7 @@
 #include "HUD/BlasterOverlay.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Components/Image.h"
 
 void UBlasterOverlay::SetHealth(float Health, float MaxHealth)
 {
@@ -87,5 +88,22 @@ void UBlasterOverlay::SetGrenadesText(int32 Grenades)
 	{
 		const FString GrenadesString = FString::Printf(TEXT("%d"), Grenades);
 		GrenadesText->SetText(FText::FromString(GrenadesString));
+	}
+}
+
+void UBlasterOverlay::SetHighPingWarningVisible(bool bVisible)
+{
+	if (HighPingImage && HighPingAnimation)
+	{
+		if (bVisible)
+		{
+			HighPingImage->SetOpacity(1.f);
+			PlayAnimation(HighPingAnimation, 0.f, 5);
+		}
+		else
+		{
+			HighPingImage->SetOpacity(0.f);
+			if (IsAnimationPlaying(HighPingAnimation)) StopAnimation(HighPingAnimation);
+		}
 	}
 }

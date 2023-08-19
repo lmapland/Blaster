@@ -92,7 +92,7 @@ void UCombatComponent::ServerSetAiming_Implementation(bool bInAiming)
 void UCombatComponent::FireButtonPressed(bool bPressed)
 {
 	bFireButtonPressed = bPressed;
-	Fire();
+	if (bFireButtonPressed) Fire();
 }
 
 void UCombatComponent::ThrowGrenadeFinished()
@@ -257,12 +257,36 @@ void UCombatComponent::Fire()
 	if (bFireButtonPressed && CanFire())
 	{
 		ServerFire(HitTarget);
+		LocalFire(HitTarget);
 
 		CrosshairShootingFactor = 0.75f;
 		bCanFire = false;
 
 		StartFireTimer();
 	}
+}
+
+void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHit)
+{
+	if (!EquippedWeapon) return;
+
+	if (Character && (CombatState == ECombatState::ECS_Unoccupied || (CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun)))
+	{
+		Character->PlayFireMontage(bAiming);
+		EquippedWeapon->Fire(TraceHit);
+		CombatState = ECombatState::ECS_Unoccupied;
+	}
+}
+
+void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
+{
+	MulticastFire(TraceHitTarget);
+}
+
+void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
+{
+	if (Character && Character->IsLocallyControlled() && !Character->HasAuthority()) return;
+	LocalFire(TraceHitTarget);
 }
 
 bool UCombatComponent::CanFire()
@@ -292,23 +316,6 @@ void UCombatComponent::InitializeCarriedAmmo()
 	CarriedAmmoMap.Emplace(EWeaponType::EWT_GrenadeLauncher, StartingGrenadeLauncherAmmo);
 }
 
-void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
-{
-	MulticastFire(TraceHitTarget);
-}
-
-void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
-{
-	if (!EquippedWeapon) return;
-
-	if (Character && (CombatState == ECombatState::ECS_Unoccupied || (CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun)))
-	{
-		Character->PlayFireMontage(bAiming);
-		EquippedWeapon->Fire(TraceHitTarget);
-		CombatState = ECombatState::ECS_Unoccupied;
-	}
-}
-
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -329,15 +336,49 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
+	DOREPLIFETIME(UCombatComponent, SecondaryWeapon);
 	DOREPLIFETIME(UCombatComponent, bAiming);
 	DOREPLIFETIME_CONDITION(UCombatComponent, CarriedAmmo, COND_OwnerOnly);
 	DOREPLIFETIME(UCombatComponent, CombatState);
 	DOREPLIFETIME(UCombatComponent, Grenades);
 }
 
+void UCombatComponent::SwapWeapons()
+{
+	UE_LOG(LogTemp, Warning, TEXT("SwapWeapons()"));
+	if (!EquippedWeapon || !SecondaryWeapon || CombatState != ECombatState::ECS_Unoccupied) return;
+
+	AWeapon* Temp = EquippedWeapon;
+	EquippedWeapon = SecondaryWeapon;
+	SecondaryWeapon = Temp;
+
+	// Equipped Weapon
+	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+	AttachActorToRightHand(EquippedWeapon);
+	EquippedWeapon->SetHUDAmmo();
+	EquippedWeapon->PlayEquipSound(Character->GetActorLocation());
+	UpdateCarriedAmmo();
+	if (EquippedWeapon->IsEmpty()) Reload();
+
+	//Secondary Weapon
+	SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Secondary);
+	AttachActorToBackpack(SecondaryWeapon);
+}
+
 void UCombatComponent::EquipWeapon(AWeapon* ToEquip)
 {
 	if (!Character || !ToEquip || CombatState != ECombatState::ECS_Unoccupied) return;
+
+	if (EquippedWeapon && !SecondaryWeapon) EquipSecondaryWeapon(ToEquip);
+	else EquipPrimaryWeapon(ToEquip);
+
+	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
+	Character->bUseControllerRotationYaw = true;
+}
+
+void UCombatComponent::EquipPrimaryWeapon(AWeapon* ToEquip)
+{
+	if (!Character || !ToEquip) return;
 
 	if (EquippedWeapon) EquippedWeapon->Dropped();
 
@@ -345,17 +386,25 @@ void UCombatComponent::EquipWeapon(AWeapon* ToEquip)
 	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 
 	AttachActorToRightHand(EquippedWeapon);
-	
+
 	EquippedWeapon->SetOwner(Character); // Note that SetOwner() is provided by Actor and is replicated
 	EquippedWeapon->SetHUDAmmo();
 	EquippedWeapon->PlayEquipSound(Character->GetActorLocation());
 
 	UpdateCarriedAmmo();
-	
-	if (EquippedWeapon->IsEmpty()) Reload();
 
-	Character->GetCharacterMovement()->bOrientRotationToMovement = false;
-	Character->bUseControllerRotationYaw = true;
+	if (EquippedWeapon->IsEmpty()) Reload();
+}
+
+void UCombatComponent::EquipSecondaryWeapon(AWeapon* ToEquip)
+{
+	if (!Character || !ToEquip) return;
+
+	SecondaryWeapon = ToEquip;
+	SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Secondary);
+	SecondaryWeapon->SetOwner(Character);
+	SecondaryWeapon->PlayEquipSound(Character->GetActorLocation());
+	AttachActorToBackpack(SecondaryWeapon);
 }
 
 void UCombatComponent::AttachActorToRightHand(AWeapon* ToAttach)
@@ -379,6 +428,17 @@ void UCombatComponent::AttachActorToLeftHand(AWeapon* ToAttach)
 	if (HandSocket)
 	{
 		HandSocket->AttachActor(ToAttach, Character->GetMesh());
+	}
+}
+
+void UCombatComponent::AttachActorToBackpack(AWeapon* ToAttach)
+{
+	if (!Character || !Character->GetMesh() || !ToAttach) return;
+
+	const USkeletalMeshSocket* BackpackSocket = Character->GetMesh()->GetSocketByName(FName("BackpackSocket"));
+	if (BackpackSocket)
+	{
+		BackpackSocket->AttachActor(ToAttach, Character->GetMesh());
 	}
 }
 
@@ -568,9 +628,21 @@ void UCombatComponent::OnRep_EquippedWeapon()
 		AttachActorToRightHand(EquippedWeapon);
 
 		EquippedWeapon->PlayEquipSound(Character->GetActorLocation());
+		EquippedWeapon->SetCustomDepthEnabled(false);
+		EquippedWeapon->SetHUDAmmo();
 
 		Character->GetCharacterMovement()->bOrientRotationToMovement = false;
 		Character->bUseControllerRotationYaw = true;
+	}
+}
+
+void UCombatComponent::OnRep_SecondaryWeapon()
+{
+	if (SecondaryWeapon && Character)
+	{
+		SecondaryWeapon->SetWeaponState(EWeaponState::EWS_Secondary);
+		AttachActorToBackpack(SecondaryWeapon);
+		SecondaryWeapon->PlayEquipSound(Character->GetActorLocation());
 	}
 }
 

@@ -264,9 +264,10 @@ void ABlaster::UpdateJumpVelocityByPercent(float Percent)
 
 void ABlaster::Elim()
 {
-	if (CombatComponent2 && CombatComponent2->EquippedWeapon)
+	if (CombatComponent2)
 	{
-		CombatComponent2->EquippedWeapon->Dropped();
+		if (CombatComponent2->EquippedWeapon) CombatComponent2->EquippedWeapon->Dropped();
+		if (CombatComponent2->SecondaryWeapon) CombatComponent2->SecondaryWeapon->Dropped();
 	}
 
 	MulticastElim();
@@ -458,14 +459,15 @@ void ABlaster::Equip()
 
 	check(CombatComponent2);
 
-	if (HasAuthority())
-	{
-		CombatComponent2->EquipWeapon(OverlappingWeapon);
-	}
-	else
-	{
-		ServerEquipButtonPressed();
-	}
+	ServerEquipButtonPressed();
+}
+
+void ABlaster::ServerEquipButtonPressed_Implementation()
+{
+	check(CombatComponent2);
+
+	if (OverlappingWeapon) CombatComponent2->EquipWeapon(OverlappingWeapon);
+	else CombatComponent2->SwapWeapons();
 }
 
 void ABlaster::ReloadButtonPressed()
@@ -763,6 +765,7 @@ void ABlaster::AfterBeginPlay()
 		SetHUDHealth();
 		SetHUDShield();
 		BlasterController->SetHUDGrenades(CombatComponent2->GetGrenadeCount());
+		SpawnDefaultWeapon();
 	}
 
 	BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
@@ -788,6 +791,22 @@ void ABlaster::UpdateDissolveMaterial(float DissolveValue)
 	}
 }
 
+void ABlaster::SpawnDefaultWeapon()
+{
+	ABlasterGameMode* GameMode = Cast<ABlasterGameMode>(UGameplayStatics::GetGameMode(this));
+	if (DefaultWeaponClass && GameMode && !bElimmed)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AWeapon* StartingWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultWeaponClass, SpawnParams);
+		if (StartingWeapon && CombatComponent2)
+		{
+			CombatComponent2->EquipWeapon(StartingWeapon);
+			StartingWeapon->bDestroyWeapon = true;
+		}
+	}
+}
+
 void ABlaster::OnRep_Health(float PreviousHealth)
 {
 	SetHUDHealth();
@@ -804,13 +823,6 @@ void ABlaster::OnRep_Shield(float PreviousShield)
 
 void ABlaster::OnRep_Stamina()
 {
-}
-
-void ABlaster::ServerEquipButtonPressed_Implementation()
-{
-	check(CombatComponent2);
-
-	CombatComponent2->EquipWeapon(OverlappingWeapon);
 }
 
 void ABlaster::Tick(float DeltaTime)

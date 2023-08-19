@@ -27,6 +27,8 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void EquipWeapon(AWeapon* ToEquip);
+	void EquipPrimaryWeapon(AWeapon* ToEquip);
+	void EquipSecondaryWeapon(AWeapon* ToEquip);
 	void Reload();
 
 	UFUNCTION(BlueprintCallable)
@@ -49,6 +51,7 @@ public:
 	void ServerLaunchGrenade(const FVector_NetQuantize& Target);
 
 	void PickupAmmo(EWeaponType WeaponType, int32 AmmoAmount);
+	void SwapWeapons();
 
 protected:
 	virtual void BeginPlay() override;
@@ -59,6 +62,9 @@ protected:
 	
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
+	
+	UFUNCTION()
+	void OnRep_SecondaryWeapon();
 
 	UFUNCTION()
 	void OnRep_CarriedAmmo();
@@ -86,6 +92,7 @@ protected:
 
 	void AttachActorToRightHand(AWeapon* ToAttach);
 	void AttachActorToLeftHand(AWeapon* ToAttach);
+	void AttachActorToBackpack(AWeapon* ToAttach);
 	void UpdateCarriedAmmo();
 
 	int32 AmountToReload();
@@ -98,6 +105,7 @@ private:
 	void FireTimerFinished();
 	void StartFireTimer();
 	void Fire();
+	void LocalFire(const FVector_NetQuantize& TraceHit);
 	bool CanFire();
 	void InitializeCarriedAmmo();
 	void UpdateAmmoValues();
@@ -116,7 +124,10 @@ private:
 	ABlasterHUD* HUD;
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
-	AWeapon* EquippedWeapon = nullptr;
+	AWeapon* EquippedWeapon;
+	
+	UPROPERTY(ReplicatedUsing = OnRep_SecondaryWeapon)
+	AWeapon* SecondaryWeapon;
 
 	UPROPERTY(Replicated)
 	bool bAiming;

@@ -8,6 +8,7 @@
 
 class UProgressBar;
 class UTextBlock;
+class UImage;
 
 /**
  * 
@@ -27,6 +28,7 @@ public:
 	void SetCarriedAmmo(int32 Ammo);
 	void SetMatchCountdownText(int32 Minutes, int32 Seconds);
 	void SetGrenadesText(int32 Grenades);
+	void SetHighPingWarningVisible(bool bVisible);
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthBar;
@@ -58,4 +60,10 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* GrenadesText;
 
+	// Opacity is set to 0 by default
+	UPROPERTY(meta = (BindWidget))
+	UImage* HighPingImage;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* HighPingAnimation;
 };

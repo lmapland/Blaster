@@ -12,6 +12,7 @@ enum class EWeaponState : uint8
 {
 	EWS_Initial UMETA(DisplayName = "Initial State"),
 	EWS_Equipped UMETA(DisplayName = "Equipped"),
+	EWS_Secondary UMETA(DisplayName = "Secondary"),
 	EWS_Dropped UMETA(DisplayName = "Dropped")
 	//EWS_Initial UMETA(DisplayName = "Initial State"),
 };
@@ -66,8 +67,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Equip")
 	USoundCue* EquipSound;
 
+	bool bDestroyWeapon = false;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnWeaponStateSet();
+	virtual void OnEquipped();
+	virtual void OnDropped();
+	virtual void OnSecondary();
 
 	UFUNCTION()
 	virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

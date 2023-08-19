@@ -155,6 +155,8 @@ private:
 	UFUNCTION()
 	void UpdateDissolveMaterial(float DissolveValue);
 
+	void SpawnDefaultWeapon();
+
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	USpringArmComponent* CameraBoom;
 
@@ -287,6 +289,9 @@ private:
 	float BaseWalkSpeed = 400.f;
 	float BaseCrouchSpeed = 200.f;
 	float BaseJumpVelocity = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Character | Defaults")
+	TSubclassOf<AWeapon> DefaultWeaponClass;
 
 public:
 	FORCEINLINE float GetAOYaw() const { return AO_Yaw; }

@@ -56,10 +56,13 @@ protected:
 	UFUNCTION(Client, Reliable)
 	void ClientJoinMidgame(FName StateOfMatch, float Warmup, float Match, float StartingTime, float Cooldown);
 
+	void ShowHighPingWarning(bool bShouldShow);
+	void CheckPing(float DeltaTime);
+
 	// Difference between client and server time
 	float ClientServerDelta = 0.f;
 
-	UPROPERTY(EditAnywhere, Category = "Server Sync")
+	UPROPERTY(EditAnywhere, Category = "Controller Properties | Server Sync")
 	float TimeSyncFrequency = 5.f;
 
 	float TimeSyncRunningTime = 0.f;
@@ -94,4 +97,25 @@ private:
 	float HUDScore;
 	int32 HUDDefeats;
 	int32 HUDGrenades;
+	
+	UPROPERTY(EditAnywhere, Category = "Controller Properties | Ping")
+	float HighPingThreshold;
+
+	/* The current amount of time since the last High Ping check */
+	float HighPingRunningTime = 0.f;
+
+	/* How often to check for High Ping */
+	UPROPERTY(EditAnywhere, Category = "Controller Properties | Ping")
+	float CheckPingFrequency = 20.f;
+
+	/* The current amount of time the High Ping Warning has been running */
+	float HighPingWarningRunningTime = 0.f;
+
+	/* How long to play the High Ping Warning */
+	UPROPERTY(EditAnywhere, Category = "Controller Properties | Ping")
+	float HighPingWarningDuration = 5.f;
+
+	/* Indicates whether or not we need to track the High Ping Warning running time */
+	bool bHighPingWarningIsRunning = false;
+
 };
