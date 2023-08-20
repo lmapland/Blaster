@@ -19,9 +19,7 @@ class MPTESTING_API AHitScanWeapon : public AWeapon
 public:
 	virtual void Fire(const FVector& HitTarget);
 
-
 protected:
-	FVector TraceEndWithScatter(const FVector& TraceStart, const FVector& HitTarget);
 	void PerformTraceHit(const FVector& HitTarget, FTransform& SocketTransform, FHitResult& HitResult);
 	void ApplyDamageOnHit(ABlaster* HitResult, APawn* OwnerPawn, float DamageToApply);
 	void PlayFireBeginEffects(FTransform& SocketTransform);
@@ -45,15 +43,5 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Firing");
 	USoundCue* FireSound;
-
-private:
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Scatter");
-	float DistanceToSphere = 800.f;
-
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Scatter");
-	float SphereRadius = 75.f;
-
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Scatter");
-	bool bUseScatter = false;
 
 };

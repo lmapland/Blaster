@@ -5,7 +5,6 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Characters/Blaster.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetMathLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
 #include "Enums/WeaponTypes.h"
@@ -27,7 +26,7 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	if (HitResult.bBlockingHit)
 	{
 		BeamEnd = HitResult.ImpactPoint;
-		ApplyDamageOnHit(Cast<ABlaster>(HitResult.GetActor()), OwnerPawn, Damage);
+		if (HasAuthority()) ApplyDamageOnHit(Cast<ABlaster>(HitResult.GetActor()), OwnerPawn, Damage);
 		PlayFireImpactEffects(HitResult);
 	}
 	FireBeam(SocketTransform, BeamEnd);
@@ -40,28 +39,14 @@ void AHitScanWeapon::PerformTraceHit(const FVector& HitTarget, FTransform& Socke
 	if (MuzzleFlashSocket)
 	{
 		SocketTransform = MuzzleFlashSocket->GetSocketTransform(GetWeaponMesh());
-		FVector Start = SocketTransform.GetLocation();
-		FVector End = bUseScatter ? TraceEndWithScatter(Start, HitTarget) : Start + (HitTarget - Start) * 1.25f;
+		const FVector Start = SocketTransform.GetLocation();
+		const FVector End = Start + (HitTarget - Start) * 1.25f;
 
 		if (GetWorld())
 		{
 			GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility);
 		}
 	}
-}
-
-FVector AHitScanWeapon::TraceEndWithScatter(const FVector& TraceStart, const FVector& HitTarget)
-{
-	FVector ToTargetNormalized = (HitTarget - TraceStart).GetSafeNormal();
-	FVector SphereCenter = TraceStart + ToTargetNormalized * DistanceToSphere;
-	//DrawDebugSphere(GetWorld(), SphereCenter, SphereRadius, 12, FColor::Red, true);
-	FVector RandVec = UKismetMathLibrary::RandomUnitVector() * FMath::FRandRange(0.f, SphereRadius);
-	FVector EndLoc = SphereCenter + RandVec;
-	FVector ToEndLoc = EndLoc - TraceStart;
-	//DrawDebugSphere(GetWorld(), EndLoc, 4.f, 12, FColor::Orange, true);
-	//DrawDebugLine(GetWorld(), TraceStart, FVector(TraceStart + ToEndLoc * TRACE_LENGTH / ToEndLoc.Size()), FColor::Cyan, true);
-
-	return FVector(TraceStart + ToEndLoc * TRACE_LENGTH / ToEndLoc.Size());
 }
 
 void AHitScanWeapon::ApplyDamageOnHit(ABlaster* TargetHit, APawn* OwnerPawn, float DamageToApply)
