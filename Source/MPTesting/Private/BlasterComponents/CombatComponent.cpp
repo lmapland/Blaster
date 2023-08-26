@@ -79,6 +79,7 @@ void UCombatComponent::SetAiming(bool bInAiming)
 			Character->ShowSniperScope(bInAiming);
 		}
 	}
+	if (Character->IsLocallyControlled()) bAimButtonPressed = bAiming;
 }
 
 void UCombatComponent::ServerSetAiming_Implementation(bool bInAiming)
@@ -358,7 +359,8 @@ void UCombatComponent::MulticastShotgunFire_Implementation(const TArray<FVector_
 bool UCombatComponent::CanFire()
 {
 	return bCanFire && EquippedWeapon && !EquippedWeapon->IsEmpty() &&
-		(CombatState == ECombatState::ECS_Unoccupied || (CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun));
+		(CombatState == ECombatState::ECS_Unoccupied || (CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun) &&
+		!bLocallyReloading);
 }
 
 void UCombatComponent::OnRep_CarriedAmmo()
@@ -523,9 +525,11 @@ void UCombatComponent::UpdateCarriedAmmo()
 
 void UCombatComponent::Reload()
 {
-	if (CarriedAmmo <= 0 || CombatState != ECombatState::ECS_Unoccupied || (EquippedWeapon && EquippedWeapon->IsFull())) return;
+	if (CarriedAmmo <= 0 || bLocallyReloading || CombatState != ECombatState::ECS_Unoccupied || (EquippedWeapon && EquippedWeapon->IsFull())) return;
 
 	ServerReload();
+	bLocallyReloading = true;
+	HandleReload();
 }
 
 void UCombatComponent::ShotgunShellReload()
@@ -543,13 +547,21 @@ void UCombatComponent::ServerReload_Implementation()
 	if (!Character || !EquippedWeapon) return;
 
 	CombatState = ECombatState::ECS_Reloading;
-	HandleReload();
+	if (!Character->IsLocallyControlled()) HandleReload();
+}
+
+void UCombatComponent::HandleReload()
+{
+	if (!Character) return;
+
+	Character->PlayReloadMontage();
 }
 
 void UCombatComponent::FinishReloading()
 {
 	if (Character == nullptr || EquippedWeapon == nullptr) return;
 
+	bLocallyReloading = false;
 	if (Character->HasAuthority())
 	{
 		UpdateAmmoValues();
@@ -571,7 +583,7 @@ void UCombatComponent::UpdateAmmoValues()
 	Controller = Controller == nullptr ? Character->GetBlasterController() : Controller;
 	if (Controller) Controller->SetHUDCarriedAmmo(CarriedAmmo);
 
-	EquippedWeapon->AddAmmo(-ReloadAmount);
+	EquippedWeapon->AddAmmo(ReloadAmount);
 }
 
 void UCombatComponent::UpdateHUDGrenades()
@@ -584,6 +596,14 @@ void UCombatComponent::UpdateHUDGrenades()
 void UCombatComponent::OnRep_Grenades()
 {
 	UpdateHUDGrenades();
+}
+
+void UCombatComponent::OnRep_Aiming()
+{
+	if (Character && Character->IsLocallyControlled())
+	{
+		bAiming = bAimButtonPressed;
+	}
 }
 
 void UCombatComponent::UpdateShotgunAmmoValues()
@@ -600,7 +620,7 @@ void UCombatComponent::UpdateShotgunAmmoValues()
 	Controller = Controller == nullptr ? Character->GetBlasterController() : Controller;
 	if (Controller) Controller->SetHUDCarriedAmmo(CarriedAmmo);
 
-	EquippedWeapon->AddAmmo(-1);
+	EquippedWeapon->AddAmmo(1);
 	bCanFire = true;
 	if (EquippedWeapon->IsFull() || CarriedAmmo == 0)
 	{
@@ -613,7 +633,7 @@ void UCombatComponent::OnRep_CombatState()
 	switch (CombatState)
 	{
 	case ECombatState::ECS_Reloading:
-		HandleReload();
+		if (Character && !Character->IsLocallyControlled()) HandleReload();
 		break;
 	case ECombatState::ECS_Unoccupied:
 		if (bFireButtonPressed) Fire();
@@ -627,11 +647,6 @@ void UCombatComponent::OnRep_CombatState()
 		}
 		break;
 	}
-}
-
-void UCombatComponent::HandleReload()
-{
-	Character->PlayReloadMontage();
 }
 
 void UCombatComponent::ThrowGrenade()

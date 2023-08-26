@@ -14,6 +14,7 @@
 #include "Characters/Blaster.h"
 #include "Controller/BlasterController.h"
 #include "Weapons/Casing.h"
+//#include "BlasterComponents/CombatComponent.h"
 
 AWeapon::AWeapon()
 {
@@ -84,7 +85,6 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, WeaponState);
-	DOREPLIFETIME(AWeapon, Ammo);
 }
 
 void AWeapon::SetOwner(AActor* NewOwner)
@@ -213,34 +213,6 @@ void AWeapon::OnSecondary()
 	SetCustomDepthEnabled(true);
 }
 
-void AWeapon::SetHUDAmmo()
-{
-	Blaster = Blaster ? Cast<ABlaster>(GetOwner()) : Blaster;
-	if (Blaster && Blaster->IsLocallyControlled())
-	{
-		if (BlasterController)
-		{
-			//UE_LOG(LogTemp, Warning, TEXT("AWeapon::SetHUDAmmo(): Blaster & BlasterController are valid"));
-			BlasterController->SetHUDWeaponAmmo(Ammo);
-		}
-		else
-		{
-			//UE_LOG(LogTemp, Warning, TEXT("AWeapon::SetHUDAmmo(): Blaster Controller is null"));
-			BlasterController = BlasterController ? Blaster->GetBlasterController() : BlasterController;
-			if (BlasterController)
-			{
-				BlasterController->SetHUDWeaponAmmo(Ammo);
-			}
-		}
-	}
-}
-
-void AWeapon::AddAmmo(int32 AmountToAdd)
-{
-	Ammo = FMath::Clamp(Ammo - AmountToAdd, 0, MagCapacity);
-	SetHUDAmmo();
-}
-
 void AWeapon::PlayEquipSound(FVector Location)
 {
 	if (EquipSound) UGameplayStatics::PlaySoundAtLocation(this, EquipSound, Location);
@@ -280,15 +252,57 @@ void AWeapon::SpendRound()
 
 	--Ammo;
 	SetHUDAmmo();
+	if (HasAuthority()) ClientUpdateAmmo(Ammo);
+	else Sequence++;
 }
 
-void AWeapon::OnRep_Ammo()
+void AWeapon::ClientUpdateAmmo_Implementation(int32 ServerAmmo)
 {
-	if (Blaster && Blaster->IsLocallyControlled() && IsFull())
+	if (HasAuthority()) return;
+	Ammo = ServerAmmo;
+	Sequence--;
+	Ammo -= Sequence;
+	SetHUDAmmo();
+}
+
+void AWeapon::AddAmmo(int32 AmountToAdd)
+{
+	Ammo = FMath::Clamp(Ammo + AmountToAdd, 0, MagCapacity);
+	SetHUDAmmo();
+	ClientAddAmmo(AmountToAdd);
+}
+
+void AWeapon::ClientAddAmmo_Implementation(int32 AmountToAdd)
+{
+	if (HasAuthority()) return;
+
+	Ammo = FMath::Clamp(Ammo + AmountToAdd, 0, MagCapacity);
+	Blaster = Blaster ? Cast<ABlaster>(GetOwner()) : Blaster;
+	if (Blaster && IsFull())
 	{
 		Blaster->JumpToShotgunReloadEnd();
 	}
 	SetHUDAmmo();
+}
+
+void AWeapon::SetHUDAmmo()
+{
+	Blaster = Blaster ? Cast<ABlaster>(GetOwner()) : Blaster;
+	if (Blaster && Blaster->IsLocallyControlled())
+	{
+		if (BlasterController)
+		{
+			BlasterController->SetHUDWeaponAmmo(Ammo);
+		}
+		else
+		{
+			BlasterController = BlasterController ? Blaster->GetBlasterController() : BlasterController;
+			if (BlasterController)
+			{
+				BlasterController->SetHUDWeaponAmmo(Ammo);
+			}
+		}
+	}
 }
 
 void AWeapon::Fire(const FVector& HitTarget)
@@ -306,7 +320,7 @@ void AWeapon::Fire(const FVector& HitTarget)
 		
 	}
 
-	if (HasAuthority()) SpendRound();
+	SpendRound();
 }
 
 void AWeapon::Dropped()

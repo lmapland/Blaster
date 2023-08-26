@@ -22,6 +22,8 @@ class UCombatComponent;
 class UBuffComponent;
 class ABlasterController;
 class ABlasterPlayerState;
+class UBoxComponent;
+class ULagCompensationComponent;
 
 UCLASS()
 class MPTESTING_API ABlaster : public ACharacter, public IInteractWithCrosshairs
@@ -74,9 +76,68 @@ public:
 
 	void SetAttachedGrenadeVisibility(bool bIsVisible);
 	FVector GetGrenadeLocation();
+	bool IsLocallyReloading();
 
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
+
+	/* Hitboxes used for server-side rewind */
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* Head;
+	
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* Pelvis;
+	
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* Spine02;
+	
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* Spine03;
+	
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* UpperArmL;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* LowerArmL;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* HandL;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* UpperArmR;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* LowerArmR;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* HandR;
+	
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* Backpack;
+	
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* Blanket;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* ThighL;
+	
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* CalfL;
+	
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* FootL;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* ThighR;
+	
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* CalfR;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* FootR;
+	
+	UPROPERTY()
+	TMap<FName, UBoxComponent*> HitCollisionBoxes;
 
 protected:
 	virtual void BeginPlay() override;
@@ -171,6 +232,9 @@ private:
 	
 	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
 	UBuffComponent* BuffComponent2;
+
+	UPROPERTY(VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
+	ULagCompensationComponent* LagCompensation;
 
 	UPROPERTY()
 	ABlasterController* BlasterController;
@@ -304,4 +368,5 @@ public:
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent2; }
 	FORCEINLINE UBuffComponent* GetBuffComponent() const { return BuffComponent2; }
 	FORCEINLINE bool GameplayIsDisabled() const { return bDisableGameplay; }
+	FORCEINLINE ULagCompensationComponent* GetLagCompensation() const { return LagCompensation; }
 };

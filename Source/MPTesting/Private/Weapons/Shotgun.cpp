@@ -43,7 +43,7 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 		for (auto HitPair : HitMap)
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("Applying damage %f to %s"), HitPair.Value, *HitPair.Key->GetName());
-			ApplyDamageOnHit(HitPair.Key, OwnerPawn, HitPair.Value);
+			//ApplyDamageOnHit(HitPair.Key, OwnerPawn, HitPair.Value, HitResult.TraceStart, HitResult);
 		}
 	}
 }

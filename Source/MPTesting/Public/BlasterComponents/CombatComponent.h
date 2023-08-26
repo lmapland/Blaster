@@ -124,6 +124,9 @@ private:
 	UFUNCTION()
 	void OnRep_Grenades();
 
+	UFUNCTION()
+	void OnRep_Aiming();
+
 	UPROPERTY()
 	ABlaster* Character;
 
@@ -139,8 +142,10 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_SecondaryWeapon)
 	AWeapon* SecondaryWeapon;
 
-	UPROPERTY(Replicated)
-	bool bAiming;
+	UPROPERTY(ReplicatedUsing = OnRep_Aiming)
+	bool bAiming = false;
+
+	bool bAimButtonPressed = false;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Properties | Movement")
 	float BaseWalkSpeed = 600.f;
@@ -215,9 +220,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat Properties | Ammo")
 	int32 MaxGrenades = 10;
 
-	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_CombatState, Category = "Combat Properties | Combat")
 	ECombatState CombatState = ECombatState::ECS_Unoccupied;
+
+	bool bLocallyReloading = false;
 
 	public:
 		FORCEINLINE int32 GetGrenadeCount() const { return Grenades; }
+		FORCEINLINE bool IsLocallyReloading() const { return bLocallyReloading; }
 };

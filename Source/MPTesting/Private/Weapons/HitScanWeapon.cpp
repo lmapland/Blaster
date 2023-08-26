@@ -3,10 +3,12 @@
 
 #include "Weapons/HitScanWeapon.h"
 #include "Engine/SkeletalMeshSocket.h"
-#include "Characters/Blaster.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
+#include "BlasterComponents/LagCompensationComponent.h"
+#include "Characters/Blaster.h"
+#include "Controller/BlasterController.h"
 #include "Enums/WeaponTypes.h"
 #include "DrawDebugHelpers.h"
 
@@ -26,7 +28,8 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	if (HitResult.bBlockingHit)
 	{
 		BeamEnd = HitResult.ImpactPoint;
-		if (HasAuthority()) ApplyDamageOnHit(Cast<ABlaster>(HitResult.GetActor()), OwnerPawn, Damage);
+		;
+		if (HasAuthority()) ApplyDamageOnHit(Cast<ABlaster>(HitResult.GetActor()), OwnerPawn, Damage, HitResult.TraceStart, HitResult.ImpactPoint);
 		PlayFireImpactEffects(HitResult);
 	}
 	FireBeam(SocketTransform, BeamEnd);
@@ -49,12 +52,24 @@ void AHitScanWeapon::PerformTraceHit(const FVector& HitTarget, FTransform& Socke
 	}
 }
 
-void AHitScanWeapon::ApplyDamageOnHit(ABlaster* TargetHit, APawn* OwnerPawn, float DamageToApply)
+void AHitScanWeapon::ApplyDamageOnHit(ABlaster* TargetHit, APawn* OwnerPawn, float DamageToApply, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& TraceEnd)
 {
 	AController* InstigatorController = OwnerPawn->GetController();
-	if (TargetHit && HasAuthority() && InstigatorController)
+	if (TargetHit && InstigatorController)
 	{
-		UGameplayStatics::ApplyDamage(TargetHit, DamageToApply, InstigatorController, this, UDamageType::StaticClass());
+		if (HasAuthority() && bUseServerRewind)
+		{
+			UGameplayStatics::ApplyDamage(TargetHit, DamageToApply, InstigatorController, this, UDamageType::StaticClass());
+		}
+		else if (HasAuthority() && !bUseServerRewind)
+		{
+			Blaster = Blaster ? Blaster : Cast<ABlaster>(OwnerPawn);
+			BlasterController = BlasterController ? BlasterController : Cast<ABlasterController>(InstigatorController);
+			if (Blaster && BlasterController && Blaster->GetLagCompensation())
+			{
+				Blaster->GetLagCompensation()->ServerScoreRequest(TargetHit, TraceStart, TraceEnd, BlasterController->GetServerTime() - BlasterController->SingleTripTime, this);
+			}
+		}
 	}
 }
 

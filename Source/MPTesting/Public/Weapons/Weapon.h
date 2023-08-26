@@ -88,21 +88,35 @@ protected:
 
 	UFUNCTION()
 	void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
+	UPROPERTY()
+	ABlaster* Blaster;
+
+	UPROPERTY()
+	ABlasterController* BlasterController;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Scatter");
 	float DistanceToSphere = 800.f;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Scatter");
 	float SphereRadius = 75.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Damage")
+	float Damage = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Default");
+	bool bUseServerRewind = false;
 
 private:
 	UFUNCTION()
 	void OnRep_WeaponState();
-
-	UFUNCTION()
-	void OnRep_Ammo();
-
 	void SpendRound();
+
+	UFUNCTION(Client, Reliable)
+	void ClientUpdateAmmo(int32 ServerAmmo);
+
+	UFUNCTION(Client, Reliable)
+	void ClientAddAmmo(int32 AmountToAdd);
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	USkeletalMeshComponent* WeaponMesh;
@@ -112,12 +126,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
 	UWidgetComponent* PickupWidget;
-
-	UPROPERTY()
-	ABlaster* Blaster;
-
-	UPROPERTY()
-	ABlasterController* BlasterController;
 
 	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon Properties | Default")
 	EWeaponState WeaponState = EWeaponState::EWS_Initial;
@@ -146,7 +154,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Firing")
 	bool bAutomatic = true;
 
-	UPROPERTY(ReplicatedUsing = OnRep_Ammo, EditAnywhere, Category = "Weapon Properties | Default")
+	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Default")
 	int32 Ammo = 30;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Default")
@@ -154,6 +162,10 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Scatter");
 	bool bUseScatter = false;
+
+	/* Number of unprocessed server requests for Ammo
+	* Incremented in SpendRound, decremented in ClientUpdateAmmo */
+	int32 Sequence = 0;
 
 public:
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() { return WeaponMesh; }
@@ -168,4 +180,5 @@ public:
 	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 	FORCEINLINE EFireType GetFireType() const { return FireType; }
 	FORCEINLINE bool GetUseScatter() const { return bUseScatter; }
+	FORCEINLINE float GetDamage() const { return Damage; }
 };
