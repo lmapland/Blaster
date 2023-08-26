@@ -413,7 +413,6 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 void UCombatComponent::SwapWeapons()
 {
-	UE_LOG(LogTemp, Warning, TEXT("SwapWeapons()"));
 	if (!EquippedWeapon || !SecondaryWeapon || CombatState != ECombatState::ECS_Unoccupied) return;
 
 	AWeapon* Temp = EquippedWeapon;
@@ -564,8 +563,9 @@ void UCombatComponent::FinishReloading()
 	bLocallyReloading = false;
 	if (Character->HasAuthority())
 	{
-		UpdateAmmoValues();
 		CombatState = ECombatState::ECS_Unoccupied;
+		//UE_LOG(LogTemp, Warning, TEXT("FinishReloading(): Character has authority"));
+		UpdateAmmoValues();
 	}
 
 	if (bFireButtonPressed) Fire();

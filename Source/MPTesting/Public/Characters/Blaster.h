@@ -218,6 +218,12 @@ private:
 
 	void SpawnDefaultWeapon();
 
+	// For handling situations where the reload montage is interrupted or does not play it's FinishReload anim notify
+	UFUNCTION()
+	void ReloadMontageEndedHandler(UAnimMontage* Montage, bool bInterrupted);
+
+	void ReloadTimerFinished();
+
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	USpringArmComponent* CameraBoom;
 
@@ -356,6 +362,8 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Character | Defaults")
 	TSubclassOf<AWeapon> DefaultWeaponClass;
+
+	FTimerHandle ReloadTimer;
 
 public:
 	FORCEINLINE float GetAOYaw() const { return AO_Yaw; }

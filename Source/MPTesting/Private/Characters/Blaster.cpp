@@ -243,6 +243,7 @@ void ABlaster::PlayElimMontage()
 void ABlaster::PlayReloadMontage()
 {
 	if (!CombatComponent2 || !CombatComponent2->EquippedWeapon) return;
+	//if (HasAuthority()) UE_LOG(LogTemp, Warning, TEXT("PlayReloadMontage(): About to play reload montage on authoritative character"));
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && ReloadMontage)
@@ -274,7 +275,53 @@ void ABlaster::PlayReloadMontage()
 			break;
 		}
 		AnimInstance->Montage_JumpToSection(SectionName);
+		AnimInstance->OnMontageEnded.AddDynamic(this, &ABlaster::ReloadMontageEndedHandler);
 	}
+}
+
+void ABlaster::ReloadMontageEndedHandler(UAnimMontage* Montage, bool bInterrupted)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (!AnimInstance || !CombatComponent2) return;
+
+	if (bInterrupted)
+	{
+		//UE_LOG(LogTemp, Warning, TEXT("ReloadMontageEndedHandler(): Montage was interrupted"));
+		if (HasAuthority()) UE_LOG(LogTemp, Warning, TEXT("ReloadMontageEndedHandler(): Character has authority"));
+		/* If the character got interrupted in the middle of their reload
+		 * we want to handle that. We do so by determining how far along they were 
+		 * in the animation and wait for the appropriate amount of time before calling
+		 * FinishReloading() on the CombatComponent */
+
+		float OutStartTime;
+		float OutEndTime;
+		ReloadMontage->GetSectionStartAndEndTime(ReloadMontage->GetSectionIndex(AnimInstance->Montage_GetCurrentSection()), OutStartTime, OutEndTime);
+
+		float TimeToWait = FMath::Clamp(OutEndTime - AnimInstance->Montage_GetPosition(ReloadMontage), 0, OutEndTime - OutStartTime);
+		//UE_LOG(LogTemp, Warning, TEXT("ReloadMontageEndedHandler(): TimeToWait: %f"), TimeToWait);
+
+		// If we get interrupted at the end of our reload sequence, there is no need to start a timer
+		if (TimeToWait > 0.f)
+		{
+			GetWorldTimerManager().SetTimer(ReloadTimer, this, &ABlaster::ReloadTimerFinished, TimeToWait);
+			AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABlaster::ReloadMontageEndedHandler);
+			return;
+		}
+		else if (CombatComponent2->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun)
+		{
+			JumpToShotgunReloadEnd();
+		}
+	}
+
+	CombatComponent2->FinishReloading();
+	AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABlaster::ReloadMontageEndedHandler);
+}
+
+void ABlaster::ReloadTimerFinished()
+{
+	if (!CombatComponent2) return;
+
+	CombatComponent2->FinishReloading();
 }
 
 void ABlaster::PlayThrowGrenadeMontage()
@@ -298,7 +345,8 @@ void ABlaster::PlayHitReactMontage()
 	if (!CombatComponent2 || !CombatComponent2->EquippedWeapon) return;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && HitReactMontage)
+	// The last check will prevent the hit react montage from being played if the character is, for example, reloading
+	if (AnimInstance && HitReactMontage && !AnimInstance->IsAnyMontagePlaying())
 	{
 		AnimInstance->Montage_Play(HitReactMontage);
 		FName SectionName = FName("FromFront");
@@ -350,7 +398,7 @@ ECombatState ABlaster::GetCombatState() const
 void ABlaster::JumpToShotgunReloadEnd()
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && ReloadMontage)
+	if (AnimInstance && ReloadMontage && AnimInstance->Montage_IsPlaying(ReloadMontage))
 	{
 		AnimInstance->Montage_JumpToSection("ShotgunEnd");
 	}
@@ -876,9 +924,10 @@ void ABlaster::AfterBeginPlay()
 		SetHUDHealth();
 		SetHUDShield();
 		SpawnDefaultWeapon();
-		BlasterController->SetHUDWeaponAmmo(CombatComponent2->EquippedWeapon->GetAmmo());
 		BlasterController->SetHUDCarriedAmmo(CombatComponent2->CarriedAmmo);
 		BlasterController->SetHUDGrenades(CombatComponent2->GetGrenadeCount());
+
+		if (CombatComponent2->EquippedWeapon) BlasterController->SetHUDWeaponAmmo(CombatComponent2->EquippedWeapon->GetAmmo());
 	}
 
 	BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
