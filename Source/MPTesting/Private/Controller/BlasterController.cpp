@@ -247,7 +247,7 @@ void ABlasterController::SetHUDHealth(float Health, float MaxHealth)
 	}
 	else
 	{
-		bInitializeCharacterOverlay = true;
+		bInitializeHealth = true;
 		HUDHealth = Health;
 		HUDMaxHealth = MaxHealth;
 	}
@@ -263,7 +263,7 @@ void ABlasterController::SetHUDShield(float Shield, float MaxShield)
 	}
 	else
 	{
-		bInitializeCharacterOverlay = true;
+		bInitializeShield = true;
 		HUDShield = Shield;
 		HUDMaxShield = MaxShield;
 	}
@@ -279,7 +279,7 @@ void ABlasterController::SetHUDDefeats(int32 Defeats)
 	}
 	else
 	{
-		bInitializeCharacterOverlay = true;
+		bInitializeDefeats = true;
 		HUDDefeats = Defeats;
 	}
 }
@@ -294,7 +294,7 @@ void ABlasterController::SetHUDScore(float Score)
 	}
 	else
 	{
-		bInitializeCharacterOverlay = true;
+		bInitializeScore = true;
 		HUDScore = Score;
 	}
 }
@@ -302,17 +302,31 @@ void ABlasterController::SetHUDScore(float Score)
 void ABlasterController::SetHUDWeaponAmmo(int32 Ammo)
 {
 	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;
-	if (!HUD || !HUD->Overlay) return;
 
-	HUD->Overlay->SetWeaponAmmo(Ammo);
+	if (HUD && HUD->Overlay)
+	{
+		HUD->Overlay->SetWeaponAmmo(Ammo);
+	}
+	else
+	{
+		bInitializeAmmo = true;
+		HUDAmmo = Ammo;
+	}
 }
 
 void ABlasterController::SetHUDCarriedAmmo(int32 Ammo)
 {
 	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;
-	if (!HUD || !HUD->Overlay) return;
 
-	HUD->Overlay->SetCarriedAmmo(Ammo);
+	if (HUD && HUD->Overlay)
+	{
+		HUD->Overlay->SetCarriedAmmo(Ammo);
+	}
+	else
+	{
+		bInitializeCarriedAmmo = true;
+		HUDCarriedAmmo = Ammo;
+	}
 }
 
 void ABlasterController::SetHUDMatchCountdown(float CountdownTime)
@@ -357,7 +371,7 @@ void ABlasterController::SetHUDGrenades(int32 Grenades)
 	}
 	else
 	{
-		bInitializeCharacterOverlay = true;
+		bInitializeGrenades = true;
 		HUDGrenades = Grenades;
 	}
 }
@@ -403,10 +417,13 @@ void ABlasterController::PollInit()
 			Overlay = HUD->Overlay;
 			if (Overlay)
 			{
-				Overlay->SetHealth(HUDHealth, HUDMaxHealth);
-				Overlay->SetDefeats(HUDDefeats);
-				Overlay->SetScore(HUDScore);
-				Overlay->SetGrenadesText(HUDScore);
+				if (bInitializeHealth) Overlay->SetHealth(HUDHealth, HUDMaxHealth);
+				if (bInitializeDefeats) Overlay->SetDefeats(HUDDefeats);
+				if (bInitializeScore) Overlay->SetScore(HUDScore);
+				if (bInitializeGrenades) Overlay->SetGrenadesText(HUDGrenades);
+				if (bInitializeShield) Overlay->SetShield(HUDShield, HUDMaxShield);
+				if (bInitializeAmmo) Overlay->SetWeaponAmmo(HUDAmmo);
+				if (bInitializeCarriedAmmo) Overlay->SetCarriedAmmo(HUDCarriedAmmo);
 			}
 		}
 	}

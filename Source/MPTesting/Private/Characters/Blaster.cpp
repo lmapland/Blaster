@@ -865,7 +865,7 @@ void ABlaster::AfterBeginPlay()
 		BlasterController = Cast<ABlasterController>(GetController());
 	}
 
-	if (BlasterController)
+	if (BlasterController && CombatComponent2)
 	{
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BlasterController->GetLocalPlayer());
 		if (Subsystem)
@@ -875,8 +875,10 @@ void ABlaster::AfterBeginPlay()
 
 		SetHUDHealth();
 		SetHUDShield();
-		BlasterController->SetHUDGrenades(CombatComponent2->GetGrenadeCount());
 		SpawnDefaultWeapon();
+		BlasterController->SetHUDWeaponAmmo(CombatComponent2->EquippedWeapon->GetAmmo());
+		BlasterController->SetHUDCarriedAmmo(CombatComponent2->CarriedAmmo);
+		BlasterController->SetHUDGrenades(CombatComponent2->GetGrenadeCount());
 	}
 
 	BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();

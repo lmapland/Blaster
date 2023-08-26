@@ -91,14 +91,22 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_MatchState)
 	FName MatchState;
 
-	bool bInitializeCharacterOverlay = false;
 	float HUDHealth;
 	float HUDMaxHealth;
+	bool bInitializeHealth = false;
 	float HUDShield;
 	float HUDMaxShield;
+	bool bInitializeShield = false;
 	float HUDScore;
+	bool bInitializeScore = false;
 	int32 HUDDefeats;
+	bool bInitializeDefeats = false;
 	int32 HUDGrenades;
+	bool bInitializeGrenades = false;
+	int32 HUDAmmo;
+	bool bInitializeAmmo = false;
+	int32 HUDCarriedAmmo;
+	bool bInitializeCarriedAmmo = false;
 	
 	UPROPERTY(EditAnywhere, Category = "Controller Properties | Ping")
 	float HighPingThreshold;
