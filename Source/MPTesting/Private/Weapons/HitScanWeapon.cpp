@@ -28,8 +28,9 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 	if (HitResult.bBlockingHit)
 	{
 		BeamEnd = HitResult.ImpactPoint;
-		;
-		if (HasAuthority()) ApplyDamageOnHit(Cast<ABlaster>(HitResult.GetActor()), OwnerPawn, Damage, HitResult.TraceStart, HitResult.ImpactPoint);
+
+		//DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 5.f, 8.f, FColor::Red, true);
+		ApplyDamageOnHit(Cast<ABlaster>(HitResult.GetActor()), OwnerPawn, Damage, HitResult.TraceStart, HitResult.ImpactPoint);
 		PlayFireImpactEffects(HitResult);
 	}
 	FireBeam(SocketTransform, BeamEnd);
@@ -57,11 +58,11 @@ void AHitScanWeapon::ApplyDamageOnHit(ABlaster* TargetHit, APawn* OwnerPawn, flo
 	AController* InstigatorController = OwnerPawn->GetController();
 	if (TargetHit && InstigatorController)
 	{
-		if (HasAuthority() && bUseServerRewind)
+		if (HasAuthority() && !bUseServerRewind)
 		{
 			UGameplayStatics::ApplyDamage(TargetHit, DamageToApply, InstigatorController, this, UDamageType::StaticClass());
 		}
-		else if (HasAuthority() && !bUseServerRewind)
+		else if (!HasAuthority() && bUseServerRewind)
 		{
 			Blaster = Blaster ? Blaster : Cast<ABlaster>(OwnerPawn);
 			BlasterController = BlasterController ? BlasterController : Cast<ABlasterController>(InstigatorController);

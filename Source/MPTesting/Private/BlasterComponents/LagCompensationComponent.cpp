@@ -91,7 +91,6 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 		
 		if (ConfirmHitResult.bBlockingHit) // The shot hit the head; return early
 		{
-			UE_LOG(LogTemp, Warning, TEXT("ConfirmHit(): Hit the head"));
 			ResetHitBoxes(HitCharacter, CurrentFrame);
 			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
 			return FServerSideRewindResult{ true, true };
@@ -111,7 +110,6 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 		
 		if (ConfirmHitResult.bBlockingHit) // The shot hit the body
 		{
-			UE_LOG(LogTemp, Warning, TEXT("ConfirmHit(): Hit the body"));
 			ResetHitBoxes(HitCharacter, CurrentFrame);
 			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
 			return FServerSideRewindResult{ true, false };
@@ -280,10 +278,12 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlaster* HitC
 	{
 		if (Confirm.bHeadShot)
 		{
+			//UE_LOG(LogTemp, Warning, TEXT("ServerScoreRequest(): Hit confirmed - was headshot"));
 			UGameplayStatics::ApplyDamage(HitCharacter, DamageCauser->GetDamage(), Character->Controller, DamageCauser, UDamageType::StaticClass());
 		}
 		else
 		{
+			//UE_LOG(LogTemp, Warning, TEXT("ServerScoreRequest(): Hit confirmed - was bodyshot"));
 			UGameplayStatics::ApplyDamage(HitCharacter, DamageCauser->GetDamage(), Character->Controller, DamageCauser, UDamageType::StaticClass());
 		}
 	}
