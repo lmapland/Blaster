@@ -21,7 +21,7 @@ public:
 
 protected:
 	void PerformTraceHit(const FVector& HitTarget, FTransform& SocketTransform, FHitResult& HitResult);
-	void ApplyDamageOnHit(ABlaster* HitResult, APawn* OwnerPawn, float DamageToApply, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& TraceEnd);
+	void ApplyDamageOnHit(ABlaster* TargetHit, APawn* OwnerPawn, float DamageToApply, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& TraceEnd);
 	void PlayFireBeginEffects(FTransform& SocketTransform);
 	void FireBeam(FTransform& SocketTransform, const FVector& BeamEnd);
 	void PlayFireImpactEffects(FHitResult& HitResult);

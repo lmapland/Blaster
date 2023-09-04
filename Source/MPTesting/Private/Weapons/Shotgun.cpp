@@ -3,11 +3,13 @@
 
 #include "Weapons/Shotgun.h"
 #include "Engine/SkeletalMeshSocket.h"
-#include "Characters/Blaster.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
+#include "Characters/Blaster.h"
+#include "Controller/BlasterController.h"
+#include "BlasterComponents/LagCompensationComponent.h"
 
 void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 {
@@ -17,14 +19,14 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 	if (OwnerPawn == nullptr) return;
 	AController* InstigatorController = OwnerPawn->GetController();
 
-	FHitResult HitResult;
 	FTransform SocketTransform;
 
 	FVector BeamEnd;
-	TMap<ABlaster*, uint32> HitMap;
+	TMap<ABlaster*, float> HitMap;
 
 	for (FVector_NetQuantize HitTarget : HitTargets)
 	{
+		FHitResult HitResult;
 		PerformTraceHit(HitTarget, SocketTransform, HitResult);
 		BeamEnd = HitResult.TraceEnd;
 
@@ -38,12 +40,30 @@ void AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets)
 	}
 	PlayFireBeginEffects(SocketTransform);
 
-	if (HasAuthority() && InstigatorController)
+	TArray<ABlaster*> HitCharacters;
+	if (InstigatorController)
 	{
 		for (auto HitPair : HitMap)
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("Applying damage %f to %s"), HitPair.Value, *HitPair.Key->GetName());
-			//ApplyDamageOnHit(HitPair.Key, OwnerPawn, HitPair.Value, HitResult.TraceStart, HitResult);
+			if (HitPair.Key)
+			{
+				HitCharacters.AddUnique(HitPair.Key);
+
+				if (HasAuthority() && !bUseServerRewind)
+				{
+					UGameplayStatics::ApplyDamage(HitPair.Key, Damage * HitPair.Value, InstigatorController, this, UDamageType::StaticClass());
+				}
+			}
+		}
+
+		if (!HasAuthority() && bUseServerRewind)
+		{
+			Blaster = Blaster ? Blaster : Cast<ABlaster>(OwnerPawn);
+			BlasterController = BlasterController ? BlasterController : Cast<ABlasterController>(InstigatorController);
+			if (Blaster && BlasterController && Blaster->GetLagCompensation() && Blaster->IsLocallyControlled())
+			{
+				Blaster->GetLagCompensation()->ShotgunServerScoreRequest(HitCharacters, SocketTransform.GetLocation(), HitTargets, BlasterController->GetServerTime() - BlasterController->SingleTripTime);
+			}
 		}
 	}
 }
@@ -68,17 +88,17 @@ void AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVect
 	}
 }
 
-void AShotgun::CalculateDamage(FHitResult& HitResult, TMap<ABlaster*, uint32>& HitMap)
+void AShotgun::CalculateDamage(FHitResult& HitResult, TMap<ABlaster*, float>& HitMap)
 {
 	if (ABlaster* BlasterChar = Cast<ABlaster>(HitResult.GetActor()))
 	{
 		if (HitMap.Contains(BlasterChar))
 		{
-			HitMap[BlasterChar] += Damage;
+			HitMap[BlasterChar]++;
 		}
 		else
 		{
-			HitMap.Emplace(BlasterChar, Damage);
+			HitMap.Emplace(BlasterChar, 1);
 		}
 	}
 }

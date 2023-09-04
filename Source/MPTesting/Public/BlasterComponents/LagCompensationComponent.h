@@ -19,6 +19,18 @@ struct FServerSideRewindResult
 };
 
 USTRUCT(BlueprintType)
+struct FShotgunServerSideRewindResult
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TMap<ABlaster*, uint32> Headshots;
+	
+	UPROPERTY()
+	TMap<ABlaster*, uint32> Bodyshots;
+};
+
+USTRUCT(BlueprintType)
 struct FBoxInformation
 {
 	GENERATED_BODY()
@@ -45,6 +57,8 @@ struct FFramePackage
 	UPROPERTY()
 	TMap<FName, FBoxInformation> HitBoxInfo;
 
+	UPROPERTY()
+	ABlaster* Character;
 };
 
 class ABlaster;
@@ -62,9 +76,13 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	void ShowFramePackage(const FFramePackage& Package, const FColor& Color = FColor::Green);
 	FServerSideRewindResult ServerSideRewind(ABlaster* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, float HitTime);
+	FShotgunServerSideRewindResult ShotgunServerSideRewind(const TArray<ABlaster*>& HitCharacters, const FVector_NetQuantize TraceStart, const TArray<FVector_NetQuantize>& HitLocations, float HitTime);
 
 	UFUNCTION(Server, Reliable)
 	void ServerScoreRequest(ABlaster* HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, float HitTime, AWeapon* DamageCauser);
+
+	UFUNCTION(Server, Reliable)
+	void ShotgunServerScoreRequest(const TArray<ABlaster*>& HitCharacters, const FVector_NetQuantize TraceStart, const TArray<FVector_NetQuantize>& HitLocations, float HitTime);
 
 protected:
 	virtual void BeginPlay() override;
@@ -76,7 +94,9 @@ protected:
 	void ResetHitBoxes(ABlaster* HitCharacter, const FFramePackage& Package);
 	void EnableCharacterMeshCollision(ABlaster* HitCharacter, ECollisionEnabled::Type CollisionEnabled);
 	void SaveFramePackage();
+	FFramePackage GetFrameToCheck(ABlaster* HitCharacter, float HitTime);
 
+	FShotgunServerSideRewindResult ShotgunConfirmHit(const TArray<FFramePackage>& FramePackages, const FVector_NetQuantize TraceStart, const TArray<FVector_NetQuantize>& HitLocations);
 private:
 	UPROPERTY()
 	ABlaster* Character;

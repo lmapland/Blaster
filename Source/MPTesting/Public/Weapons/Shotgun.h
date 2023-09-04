@@ -19,7 +19,7 @@ public:
 	void ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize>& HitTargets);
 
 protected:
-	void CalculateDamage(FHitResult& HitResult, TMap<ABlaster*, uint32>& HitMap);
+	void CalculateDamage(FHitResult& HitResult, TMap<ABlaster*, float>& HitMap);
 	
 private:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Scatter")

@@ -66,7 +66,7 @@ void AHitScanWeapon::ApplyDamageOnHit(ABlaster* TargetHit, APawn* OwnerPawn, flo
 		{
 			Blaster = Blaster ? Blaster : Cast<ABlaster>(OwnerPawn);
 			BlasterController = BlasterController ? BlasterController : Cast<ABlasterController>(InstigatorController);
-			if (Blaster && BlasterController && Blaster->GetLagCompensation())
+			if (Blaster && BlasterController && Blaster->GetLagCompensation() && Blaster->IsLocallyControlled())
 			{
 				Blaster->GetLagCompensation()->ServerScoreRequest(TargetHit, TraceStart, TraceEnd, BlasterController->GetServerTime() - BlasterController->SingleTripTime, this);
 			}
