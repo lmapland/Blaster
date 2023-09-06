@@ -58,7 +58,8 @@ void AHitScanWeapon::ApplyDamageOnHit(ABlaster* TargetHit, APawn* OwnerPawn, flo
 	AController* InstigatorController = OwnerPawn->GetController();
 	if (TargetHit && InstigatorController)
 	{
-		if (HasAuthority() && !bUseServerRewind)
+		bool bCauseAuthDamage = !bUseServerRewind || OwnerPawn->IsLocallyControlled();
+		if (HasAuthority() && bCauseAuthDamage)
 		{
 			UGameplayStatics::ApplyDamage(TargetHit, DamageToApply, InstigatorController, this, UDamageType::StaticClass());
 		}

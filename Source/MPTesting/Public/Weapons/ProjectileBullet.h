@@ -6,6 +6,8 @@
 #include "Weapons/Projectile.h"
 #include "ProjectileBullet.generated.h"
 
+struct FPropertyChangedEvent;
+
 /**
  * 
  */
@@ -17,7 +19,12 @@ class MPTESTING_API AProjectileBullet : public AProjectile
 public:
 	AProjectileBullet();
 
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& Event) override;
+#endif
+
 protected:
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
+	virtual void BeginPlay() override;
 
 };

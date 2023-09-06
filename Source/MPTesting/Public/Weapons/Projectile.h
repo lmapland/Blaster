@@ -23,6 +23,18 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void Destroyed() override;
 
+	// Used with server-side rewind
+	bool bUseServerSideRewind = false;
+	FVector_NetQuantize TraceStart;
+	FVector_NetQuantize100 InitialVelocity;
+
+	UPROPERTY(EditAnywhere)
+	float InitialSpeed = 15000;
+	
+	/* Damage value used for direct damage and also the BaseDamage value used for Radial Damage */
+	//UPROPERTY(EditAnywhere, Category = "Projectile Properties | Damage")
+	float Damage = 10.f;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -33,10 +45,6 @@ protected:
 	void StartDestroyTimer();
 	void DestroyTimerFinished();
 	void ApplyRadialDamage();
-
-	/* Damage value used for direct damage and also the BaseDamage value used for Radial Damage */
-	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Damage")
-	float Damage = 10.f;
 
 	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Radial Damage")
 	float DamageMinimum = 1.f;
