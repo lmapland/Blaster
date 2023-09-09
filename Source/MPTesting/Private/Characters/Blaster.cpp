@@ -346,6 +346,41 @@ void ABlaster::PlayHitReactMontage()
 	}
 }
 
+void ABlaster::PlaySwapMontage()
+{
+	if (!CombatComponent2 || !CombatComponent2->EquippedWeapon) return;
+
+	// Play the montage and also set two timers, one for the middle where the character should do the weapon swapping and one at the end
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && SwapWeaponMontage)
+	{
+		AnimInstance->Montage_Play(SwapWeaponMontage);
+	}
+
+	float OutStartTime;
+	float OutEndTime;
+	SwapWeaponMontage->GetSectionStartAndEndTime(SwapWeaponMontage->GetSectionIndex(AnimInstance->Montage_GetCurrentSection()), OutStartTime, OutEndTime);
+	float TimeToWait = FMath::Clamp(OutEndTime - AnimInstance->Montage_GetPosition(SwapWeaponMontage), 0, OutEndTime - OutStartTime);
+
+	GetWorldTimerManager().SetTimer(SwapAttachedWepsTimer, this, &ABlaster::SwapAttachedTimerFinished, TimeToWait / 2);
+	GetWorldTimerManager().SetTimer(SwapFinishedTimer, this, &ABlaster::SwapTimerFinished, TimeToWait);
+	
+}
+
+void ABlaster::SwapAttachedTimerFinished()
+{
+	if (!CombatComponent2) return;
+
+	CombatComponent2->FinishSwapAttachWeapons();
+}
+
+void ABlaster::SwapTimerFinished()
+{
+	if (!CombatComponent2) return;
+
+	CombatComponent2->FinishSwapping();
+}
+
 void ABlaster::OnRep_ReplicatedMovement()
 {
 	Super::OnRep_ReplicatedMovement();
@@ -601,10 +636,15 @@ void ABlaster::FireButtonReleased()
 void ABlaster::Equip()
 {
 	if (bDisableGameplay) return;
-
 	check(CombatComponent2);
 
 	ServerEquipButtonPressed();
+	if (CombatComponent2->ShouldSwapWeapons() && !HasAuthority() && !OverlappingWeapon)
+	{
+		PlaySwapMontage();
+		CombatComponent2->CombatState = ECombatState::ECS_Swapping;
+		bFinishedSwapping = false;
+	}
 }
 
 void ABlaster::ServerEquipButtonPressed_Implementation()

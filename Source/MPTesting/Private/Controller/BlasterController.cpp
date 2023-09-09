@@ -40,6 +40,8 @@ void ABlasterController::Tick(float DeltaTime)
 
 void ABlasterController::CheckPing(float DeltaTime)
 {
+	if (HasAuthority()) return;
+
 	HighPingRunningTime += DeltaTime;
 	if (HighPingRunningTime > CheckPingFrequency)
 	{
@@ -47,7 +49,13 @@ void ABlasterController::CheckPing(float DeltaTime)
 		if (PlayerState)
 		{
 			// GetCompressedPing() returns a compressed value; must multiply by 4 to get the real value
-			if (PlayerState->GetCompressedPing() * 4 > HighPingThreshold) ShowHighPingWarning(true);
+			if (PlayerState->GetCompressedPing() * 4 > HighPingThreshold)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("CheckPing(): Ping: %i"), PlayerState->GetCompressedPing() * 4);
+				ShowHighPingWarning(true);
+				ServerReportPingStatus(true);
+			}
+			else ServerReportPingStatus(false);
 		}
 		HighPingRunningTime = 0.f;
 	}
@@ -59,6 +67,11 @@ void ABlasterController::CheckPing(float DeltaTime)
 		HighPingWarningRunningTime = 0.f;
 		bHighPingWarningIsRunning = false;
 	}
+}
+
+void ABlasterController::ServerReportPingStatus_Implementation(bool bHighPing)
+{
+	HighPingDelegate.Broadcast(bHighPing);
 }
 
 void ABlasterController::CheckTimeSync(float DeltaTime)

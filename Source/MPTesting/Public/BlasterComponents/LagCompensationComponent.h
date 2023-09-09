@@ -118,5 +118,5 @@ private:
 	TDoubleLinkedList<FFramePackage> FrameHistory;
 
 	UPROPERTY(EditAnywhere, Category = "Lag Comp Properties")
-	float MaxRecordTime = 4.f;
+	float MaxRecordTime = 0.75f;
 };

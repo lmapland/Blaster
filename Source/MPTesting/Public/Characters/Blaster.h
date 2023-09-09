@@ -47,6 +47,7 @@ public:
 	void PlayThrowGrenadeMontage();
 	FVector GetHitTarget() const;
 	void PlayHitReactMontage();
+	void PlaySwapMontage();
 	virtual void OnRep_ReplicatedMovement() override;
 	void Elim();
 	virtual void Destroyed() override;
@@ -139,6 +140,8 @@ public:
 	UPROPERTY()
 	TMap<FName, UBoxComponent*> HitCollisionBoxes;
 
+	bool bFinishedSwapping = false;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -223,6 +226,8 @@ private:
 	void ReloadMontageEndedHandler(UAnimMontage* Montage, bool bInterrupted);
 
 	void ReloadTimerFinished();
+	void SwapAttachedTimerFinished();
+	void SwapTimerFinished();
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	USpringArmComponent* CameraBoom;
@@ -272,6 +277,9 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category = Combat)
 	UAnimMontage* ThrowGrenadeMontage;
+	
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* SwapWeaponMontage;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
 	float CameraThreshold = 200.f;
@@ -364,6 +372,8 @@ private:
 	TSubclassOf<AWeapon> DefaultWeaponClass;
 
 	FTimerHandle ReloadTimer;
+	FTimerHandle SwapFinishedTimer;
+	FTimerHandle SwapAttachedWepsTimer;
 
 public:
 	FORCEINLINE float GetAOYaw() const { return AO_Yaw; }

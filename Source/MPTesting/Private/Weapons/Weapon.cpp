@@ -74,6 +74,11 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 	}
 }
 
+void AWeapon::OnPingTooHigh(bool bPingTooHigh)
+{
+	bUseServerRewind = !bPingTooHigh;
+}
+
 void AWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -85,6 +90,7 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, WeaponState);
+	DOREPLIFETIME_CONDITION(AWeapon, bUseServerRewind, COND_OwnerOnly);
 }
 
 void AWeapon::SetOwner(AActor* NewOwner)
@@ -93,6 +99,11 @@ void AWeapon::SetOwner(AActor* NewOwner)
 
 	if (NewOwner == nullptr)
 	{
+		if (Blaster && BlasterController && HasAuthority() && BlasterController->HighPingDelegate.IsBound())
+		{
+			BlasterController->HighPingDelegate.RemoveDynamic(this, &AWeapon::OnPingTooHigh);
+		}
+
 		Blaster = nullptr;
 		BlasterController = nullptr;
 	}
@@ -103,8 +114,9 @@ void AWeapon::SetOwner(AActor* NewOwner)
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("AWeapon::SetOwner(): Cast to Blaster was successful"));
 			BlasterController = Blaster->GetBlasterController();
-			if (BlasterController)
+			if (BlasterController && HasAuthority() && !BlasterController->HighPingDelegate.IsBound() && bUseServerRewind)
 			{
+				BlasterController->HighPingDelegate.AddDynamic(this, &AWeapon::OnPingTooHigh);
 				//UE_LOG(LogTemp, Warning, TEXT("AWeapon::SetOwner(): Cast to BlasterController was successful"));
 			}
 		}
@@ -210,7 +222,6 @@ void AWeapon::OnSecondary()
 	}
 	WeaponMesh->SetCustomDepthStencilValue(CUSTOM_DEPTH_TAN);
 	WeaponMesh->MarkRenderStateDirty();
-	SetCustomDepthEnabled(true);
 }
 
 void AWeapon::PlayEquipSound(FVector Location)

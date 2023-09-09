@@ -89,6 +89,9 @@ protected:
 	UFUNCTION()
 	void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	
+	UFUNCTION()
+	void OnPingTooHigh(bool bPingTooHigh);
+
 	UPROPERTY()
 	ABlaster* Blaster;
 
@@ -104,7 +107,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Damage")
 	float Damage = 20.f;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties | Default");
+	UPROPERTY(Replicated, EditAnywhere, Category = "Weapon Properties | Default");
 	bool bUseServerRewind = false;
 
 private:
