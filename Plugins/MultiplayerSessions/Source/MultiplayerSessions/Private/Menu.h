@@ -14,7 +14,7 @@ class UMultiplayerSessionsSubsystem;
  * 
  */
 UCLASS()
-class UMenu : public UUserWidget
+class MULTIPLAYERSESSIONS_API UMenu : public UUserWidget
 {
 	GENERATED_BODY()
 

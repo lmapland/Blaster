@@ -2,16 +2,19 @@
 
 
 #include "Controller/BlasterController.h"
-#include "Net/UnrealNetwork.h"
-#include "Kismet/GameplayStatics.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "GameMode/BlasterGameMode.h"
+#include "GameStates/BlasterGameState.h"
+#include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
+#include "Characters/Blaster.h"
+#include "BlasterComponents/CombatComponent.h"
+#include "PlayerStates/BlasterPlayerState.h"
 #include "HUD/BlasterHUD.h"
 #include "HUD/BlasterOverlay.h"
 #include "HUD/AnnouncementWidget.h"
-#include "Characters/Blaster.h"
-#include "BlasterComponents/CombatComponent.h"
-#include "GameStates/BlasterGameState.h"
-#include "PlayerStates/BlasterPlayerState.h"
+#include "HUD/ReturnToMainMenu.h"
 
 void ABlasterController::BeginPlay()
 {
@@ -67,6 +70,39 @@ void ABlasterController::CheckPing(float DeltaTime)
 		HighPingWarningRunningTime = 0.f;
 		bHighPingWarningIsRunning = false;
 	}
+}
+
+void ABlasterController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (InputComponent == nullptr) return;
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		EnhancedInputComponent->BindAction(QuitAction, ETriggerEvent::Completed, this, &ABlasterController::ShowRetunToMainMenu);
+	}
+}
+
+void ABlasterController::ShowRetunToMainMenu()
+{
+	if (!ReturnToMainMenuClass) return;
+	if (!ReturnToMainMenuWidget)
+	{
+		ReturnToMainMenuWidget = CreateWidget<UReturnToMainMenu>(this, ReturnToMainMenuClass);
+	}
+	if (!ReturnToMainMenuWidget) return;
+
+	// bReturnToMainMenuOpen starts out false
+	if (bReturnToMainMenuOpen) // menu is currently open; close it
+	{
+		ReturnToMainMenuWidget->MenuTeardown();
+	}
+	else // menu is currently closed; open it
+	{
+		ReturnToMainMenuWidget->MenuSetup();
+	}
+
+	bReturnToMainMenuOpen = !bReturnToMainMenuOpen;
 }
 
 void ABlasterController::ServerReportPingStatus_Implementation(bool bHighPing)

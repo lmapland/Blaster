@@ -200,7 +200,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* ThrowGrenadeAction;
 
-
 private:
 	UFUNCTION()
 	void OnRep_OverlappingWeapon(AWeapon* PreviousWeapon);

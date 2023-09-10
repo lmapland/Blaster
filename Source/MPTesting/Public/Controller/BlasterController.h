@@ -11,6 +11,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FHighPingDelegate, bool, bPingTooHig
 class ABlasterHUD;
 class UBlasterOverlay;
 class ABlasterGameMode;
+class UInputAction;
+class UUserWidget;
+class UReturnToMainMenu;
 
 /**
  * 
@@ -65,6 +68,8 @@ protected:
 
 	void ShowHighPingWarning(bool bShouldShow);
 	void CheckPing(float DeltaTime);
+	void SetupInputComponent() override;
+	void ShowRetunToMainMenu();
 
 	// Difference between client and server time
 	float ClientServerDelta = 0.f;
@@ -73,6 +78,10 @@ protected:
 	float TimeSyncFrequency = 5.f;
 
 	float TimeSyncRunningTime = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Controller Properties | Input")
+	UInputAction* QuitAction;
+
 
 private:
 	UFUNCTION()
@@ -135,5 +144,13 @@ private:
 
 	/* Indicates whether or not we need to track the High Ping Warning running time */
 	bool bHighPingWarningIsRunning = false;
+
+	UPROPERTY(EditAnywhere, Category = "Controller Properties | Widgets")
+	TSubclassOf<UUserWidget> ReturnToMainMenuClass;
+
+	UPROPERTY()
+	UReturnToMainMenu* ReturnToMainMenuWidget;
+
+	bool bReturnToMainMenuOpen = false;
 
 };
