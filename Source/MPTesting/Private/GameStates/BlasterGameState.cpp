@@ -30,3 +30,13 @@ void ABlasterGameState::UpdateTopScore(ABlasterPlayerState* ScoringPlayer)
 		TopScore = ScoringPlayer->GetScore();
 	}
 }
+
+bool ABlasterGameState::IsTopScoringPlayer(ABlasterPlayerState* PlayerState)
+{
+	return TopScoringPlayers.Contains(PlayerState);
+}
+
+void ABlasterGameState::RemoveTopScoringPlayer(ABlasterPlayerState* PlayerToRemove)
+{
+	if (TopScoringPlayers.Contains(PlayerToRemove)) TopScoringPlayers.Remove(PlayerToRemove);
+}

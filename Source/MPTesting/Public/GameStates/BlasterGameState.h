@@ -19,10 +19,15 @@ class MPTESTING_API ABlasterGameState : public AGameState
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void UpdateTopScore(ABlasterPlayerState* ScoringPlayer);
-
-	UPROPERTY(Replicated)
-	TArray<ABlasterPlayerState*> TopScoringPlayers;
+	bool IsTopScoringPlayer(ABlasterPlayerState* PlayerState);
+	void RemoveTopScoringPlayer(ABlasterPlayerState* PlayerToRemove);
 
 private:
 	float TopScore = 0.f;
+	
+	UPROPERTY(Replicated)
+	TArray<ABlasterPlayerState*> TopScoringPlayers;
+
+public:
+	FORCEINLINE TArray<ABlasterPlayerState*> GetTopScoringPlayers() const { return TopScoringPlayers; }
 };

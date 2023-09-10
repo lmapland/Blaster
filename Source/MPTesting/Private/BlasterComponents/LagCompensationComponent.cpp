@@ -80,7 +80,7 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 			{
 				if (UBoxComponent* Box = Cast<UBoxComponent>(ConfirmHitResult.Component))
 				{
-					DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Red, false, 8.f);
+					//DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Red, false, 8.f);
 				}
 			}
 			ResetHitBoxes(HitCharacter, CurrentFrame);
@@ -102,13 +102,6 @@ FServerSideRewindResult ULagCompensationComponent::ConfirmHit(const FFramePackag
 		
 		if (ConfirmHitResult.bBlockingHit) // The shot hit the body
 		{
-			if (ConfirmHitResult.Component.IsValid())
-			{
-				if (UBoxComponent* Box = Cast<UBoxComponent>(ConfirmHitResult.Component))
-				{
-					DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Blue, false, 8.f);
-				}
-			}
 			ResetHitBoxes(HitCharacter, CurrentFrame);
 			EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
 			return FServerSideRewindResult{ true, false };
@@ -145,20 +138,13 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileConfirmHit(const FF
 	PathParams.StartLocation = TraceStart;
 	PathParams.TraceChannel = ECC_HitBox;
 	PathParams.ActorsToIgnore.Add(GetOwner());
-	PathParams.DrawDebugTime = 5.f;
-	PathParams.DrawDebugType = EDrawDebugTrace::ForDuration;
+	//PathParams.DrawDebugTime = 5.f;
+	//PathParams.DrawDebugType = EDrawDebugTrace::ForDuration;
 	FPredictProjectilePathResult PathResult;
 	UGameplayStatics::PredictProjectilePath(this, PathParams, PathResult);
 
 	if (PathResult.HitResult.bBlockingHit)
 	{
-		if (PathResult.HitResult.Component.IsValid())
-		{
-			if (UBoxComponent* Box = Cast<UBoxComponent>(PathResult.HitResult.Component))
-			{
-				DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Red, false, 8.f);
-			}
-		}
 		ResetHitBoxes(HitCharacter, CurrentFrame);
 		EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
 		return FServerSideRewindResult{ true, true };
@@ -178,13 +164,6 @@ FServerSideRewindResult ULagCompensationComponent::ProjectileConfirmHit(const FF
 
 	if (PathResult.HitResult.bBlockingHit)
 	{
-		if (PathResult.HitResult.Component.IsValid())
-		{
-			if (UBoxComponent* Box = Cast<UBoxComponent>(PathResult.HitResult.Component))
-			{
-				DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Blue, false, 8.f);
-			}
-		}
 		ResetHitBoxes(HitCharacter, CurrentFrame);
 		EnableCharacterMeshCollision(HitCharacter, ECollisionEnabled::QueryAndPhysics);
 		return FServerSideRewindResult{ true, false };
@@ -231,13 +210,6 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 			{
 				if (ABlaster* BlasterChar = Cast<ABlaster>(ConfirmHitResult.GetActor()))
 				{
-					if (ConfirmHitResult.Component.IsValid())
-					{
-						if (UBoxComponent* Box = Cast<UBoxComponent>(ConfirmHitResult.Component))
-						{
-							DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Red, false, 8.f);
-						}
-					}
 					if (ShotgunResult.Headshots.Contains(BlasterChar))
 					{
 						ShotgunResult.Headshots[BlasterChar]++;
@@ -278,13 +250,6 @@ FShotgunServerSideRewindResult ULagCompensationComponent::ShotgunConfirmHit(cons
 			{
 				if (ABlaster* BlasterChar = Cast<ABlaster>(ConfirmHitResult.GetActor()))
 				{
-					if (ConfirmHitResult.Component.IsValid())
-					{
-						if (UBoxComponent* Box = Cast<UBoxComponent>(ConfirmHitResult.Component))
-						{
-							DrawDebugBox(GetWorld(), Box->GetComponentLocation(), Box->GetScaledBoxExtent(), FQuat(Box->GetComponentRotation()), FColor::Blue, false, 8.f);
-						}
-					}
 					if (ShotgunResult.Bodyshots.Contains(BlasterChar))
 					{
 						ShotgunResult.Bodyshots[BlasterChar]++;

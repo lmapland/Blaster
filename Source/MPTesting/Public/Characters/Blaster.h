@@ -11,6 +11,8 @@
 #include "Components/TimelineComponent.h"
 #include "Blaster.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLeftGame);
+
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
@@ -24,6 +26,8 @@ class ABlasterController;
 class ABlasterPlayerState;
 class UBoxComponent;
 class ULagCompensationComponent;
+class UNiagaraSystem;
+class UNiagaraComponent;
 
 UCLASS()
 class MPTESTING_API ABlaster : public ACharacter, public IInteractWithCrosshairs
@@ -49,7 +53,7 @@ public:
 	void PlayHitReactMontage();
 	void PlaySwapMontage();
 	virtual void OnRep_ReplicatedMovement() override;
-	void Elim();
+	void Elim(bool bPlayerLeftGame);
 	virtual void Destroyed() override;
 	void SetHUDHealth();
 	void SetHUDShield();
@@ -70,7 +74,7 @@ public:
 	void UpdateJumpVelocityByPercent(float Percent);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastElim();
+	void MulticastElim(bool bPlayerLeftGame);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void ShowSniperScope(bool bShowScope);
@@ -78,6 +82,15 @@ public:
 	void SetAttachedGrenadeVisibility(bool bIsVisible);
 	FVector GetGrenadeLocation();
 	bool IsLocallyReloading();
+	
+	UFUNCTION(Server, Reliable)
+	void ServerLeaveGame();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastGainedTheLead();
+	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastLostTheLead();
 
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
@@ -141,6 +154,8 @@ public:
 	TMap<FName, UBoxComponent*> HitCollisionBoxes;
 
 	bool bFinishedSwapping = false;
+
+	FOnLeftGame OnLeftGame;
 
 protected:
 	virtual void BeginPlay() override;
@@ -328,6 +343,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Elim)
 	float ElimDelay = 3.f;
 
+	bool bLeftGame = false;
+
 	UPROPERTY(VisibleAnywhere, Category = Elim)
 	UTimelineComponent* DissolveTimeline;
 
@@ -350,6 +367,12 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Elim)
 	USoundCue* ElimBotSound;
+
+	UPROPERTY(EditAnywhere, Category = Crown)
+	UNiagaraSystem* CrownSystem;
+
+	UPROPERTY()
+	UNiagaraComponent* CrownComponent;
 
 	FTimerHandle AfterBeginPlayTimer;
 

@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/Button.h"
 #include "MultiplayerSessions/Private/MultiplayerSessionsSubsystem.h"
+#include "Characters/Blaster.h"
 
 void UReturnToMainMenu::MenuSetup()
 {
@@ -104,6 +105,28 @@ void UReturnToMainMenu::ReturnButtonClicked()
 {
 	ReturnButton->SetIsEnabled(false); // disallow player from spamming the button
 
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		if (APlayerController* FirstPlayerController = World->GetFirstPlayerController())
+		{
+			if (ABlaster* Blaster = Cast<ABlaster>(FirstPlayerController->GetPawn()))
+			{
+				Blaster->ServerLeaveGame();
+				Blaster->OnLeftGame.AddDynamic(this, &UReturnToMainMenu::OnPlayerLeftGame);
+			}
+			else
+			{
+				// If no character currently exists the player is likely in the middle of being elimmed.
+				// So we enable the button and the player can click it again after they've respawned.
+				ReturnButton->SetIsEnabled(true);
+			}
+		}
+	}
+}
+
+void UReturnToMainMenu::OnPlayerLeftGame()
+{
 	if (MultiplayerSessionsSubsystem)
 	{
 		MultiplayerSessionsSubsystem->DestroySession();
