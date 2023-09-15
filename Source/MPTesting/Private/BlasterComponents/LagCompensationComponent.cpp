@@ -467,14 +467,8 @@ void ULagCompensationComponent::ServerScoreRequest_Implementation(ABlaster* HitC
 
 	if (Confirm.bHitConfirmed)
 	{
-		if (Confirm.bHeadShot)
-		{
-			UGameplayStatics::ApplyDamage(HitCharacter, DamageCauser->GetDamage(), Character->Controller, DamageCauser, UDamageType::StaticClass());
-		}
-		else
-		{
-			UGameplayStatics::ApplyDamage(HitCharacter, DamageCauser->GetDamage(), Character->Controller, DamageCauser, UDamageType::StaticClass());
-		}
+		const float TotalDamage = Confirm.bHeadShot ? DamageCauser->GetHeadShotDamage() : DamageCauser->GetDamage();
+		UGameplayStatics::ApplyDamage(HitCharacter, TotalDamage, Character->Controller, DamageCauser, UDamageType::StaticClass());
 	}
 }
 
@@ -486,7 +480,8 @@ void ULagCompensationComponent::ProjectileServerScoreRequest_Implementation(ABla
 
 	if (Confirm.bHitConfirmed)
 	{
-		UGameplayStatics::ApplyDamage(HitCharacter, Character->GetEquippedWeapon()->GetDamage(), Character->Controller, HitCharacter->GetEquippedWeapon(), UDamageType::StaticClass());
+		const float TotalDamage = Confirm.bHeadShot ? Character->GetEquippedWeapon()->GetHeadShotDamage() : Character->GetEquippedWeapon()->GetDamage();
+		UGameplayStatics::ApplyDamage(HitCharacter, TotalDamage, Character->Controller, HitCharacter->GetEquippedWeapon(), UDamageType::StaticClass());
 	}
 }
 
@@ -501,7 +496,7 @@ void ULagCompensationComponent::ShotgunServerScoreRequest_Implementation(const T
 		float TotalDamage = 0.f;
 		if (Confirm.Headshots.Contains(HitCharacter))
 		{
-			TotalDamage = Confirm.Headshots[HitCharacter] * HitCharacter->GetEquippedWeapon()->GetDamage();
+			TotalDamage = Confirm.Headshots[HitCharacter] * HitCharacter->GetEquippedWeapon()->GetHeadShotDamage();
 		}
 		if (Confirm.Bodyshots.Contains(HitCharacter))
 		{

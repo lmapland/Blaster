@@ -206,6 +206,41 @@ void ABlasterController::OnMatchStateSet(FName State)
 	}
 }
 
+void ABlasterController::BroadcastElim(APlayerState* Attacker, APlayerState* Victim)
+{
+	ClientElimAnnouncement(Attacker, Victim);
+}
+
+void ABlasterController::ClientElimAnnouncement_Implementation(APlayerState* Attacker, APlayerState* Victim)
+{
+	APlayerState* Self = GetPlayerState<APlayerState>();
+	HUD = HUD == nullptr ? Cast<ABlasterHUD>(GetHUD()) : HUD;
+
+	if (Attacker && Victim && Self && HUD)
+	{
+		if (Attacker == Self && Victim != Self)
+		{
+			HUD->AddElimAnnouncement("You", Victim->GetPlayerName());
+		}
+		else if (Attacker == Self && Victim == Self)
+		{
+			HUD->AddElimAnnouncement("You", "yourself");
+		}
+		else if (Attacker != Self && Victim == Self)
+		{
+			HUD->AddElimAnnouncement(Attacker->GetPlayerName(), "you");
+		}
+		else if (Attacker == Victim)
+		{
+			HUD->AddElimAnnouncement(Attacker->GetPlayerName(), "themselves");
+		}
+		else
+		{
+			HUD->AddElimAnnouncement(Attacker->GetPlayerName(), Victim->GetPlayerName());
+		}
+	}
+}
+
 void ABlasterController::OnRep_MatchState()
 {
 	if (MatchState == MatchState::InProgress)
@@ -224,10 +259,7 @@ void ABlasterController::HandleMatchHasStarted()
 	if (!HUD) return;
 
 	HUD->AddCharacterOverlay();
-	if (HUD->Announcement)
-	{
-		HUD->Announcement->SetVisibility(ESlateVisibility::Hidden);
-	}
+	HUD->SetAnnouncementVisibility(false);
 }
 
 void ABlasterController::HandleCooldown()
@@ -248,7 +280,7 @@ void ABlasterController::HandleCooldown()
 	HUD->Overlay->RemoveFromParent();
 	if (HUD->Announcement)
 	{
-		HUD->Announcement->SetVisibility(ESlateVisibility::Visible);
+		HUD->SetAnnouncementVisibility(true);
 		HUD->Announcement->SetAnnouncementText(FString("New Match Starts In:"));
 
 		ABlasterGameState* GameState = Cast<ABlasterGameState>(UGameplayStatics::GetGameState(this));

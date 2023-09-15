@@ -327,6 +327,7 @@ void UCombatComponent::LocalShotgunFire(const TArray<FVector_NetQuantize>& Trace
 
 	if (CombatState == ECombatState::ECS_Unoccupied || CombatState == ECombatState::ECS_Reloading || !Shotgun)
 	{
+		bLocallyReloading = false;
 		Character->PlayFireMontage(bAiming);
 		Shotgun->FireShotgun(TraceHits);
 		CombatState = ECombatState::ECS_Unoccupied;

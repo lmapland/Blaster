@@ -38,6 +38,7 @@ public:
 	virtual void ReceivedPlayer() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void OnMatchStateSet(FName State);
+	void BroadcastElim(APlayerState* Attacker, APlayerState* Victim);
 
 	float SingleTripTime = 0.f;
 
@@ -70,6 +71,9 @@ protected:
 	void CheckPing(float DeltaTime);
 	void SetupInputComponent() override;
 	void ShowRetunToMainMenu();
+
+	UFUNCTION(Client, Reliable)
+	void ClientElimAnnouncement(APlayerState* Attacker, APlayerState* Victim);
 
 	// Difference between client and server time
 	float ClientServerDelta = 0.f;

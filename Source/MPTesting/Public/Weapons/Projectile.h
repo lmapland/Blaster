@@ -31,9 +31,14 @@ public:
 	UPROPERTY(EditAnywhere)
 	float InitialSpeed = 15000;
 	
-	/* Damage value used for direct damage and also the BaseDamage value used for Radial Damage */
-	//UPROPERTY(EditAnywhere, Category = "Projectile Properties | Damage")
+	/* Damage value used for direct damage and also the BaseDamage value used for Radial Damage
+	   Only set this for Grenades and Rockets */
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Damage")
 	float Damage = 10.f;
+	
+	/* Isn't used for Grenades and Rockets */
+	UPROPERTY(EditAnywhere, Category = "Projectile Properties | Damage")
+	float HeadShotDamage = 20.f;
 
 protected:
 	virtual void BeginPlay() override;

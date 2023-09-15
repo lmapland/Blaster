@@ -24,6 +24,8 @@ public:
 
 class UBlasterOverlay;
 class UAnnouncementWidget;
+class UElimAnnouncement;
+class APlayerController;
 
 /**
  * 
@@ -37,19 +39,20 @@ public:
 	virtual void DrawHUD() override;
 	void AddCharacterOverlay();
 	void AddAnnouncement();
+	void SetAnnouncementVisibility(bool bVisible);
+	void AddElimAnnouncement(FString Attacker, FString Victim);
 
-	UPROPERTY(EditAnywhere, Category = "Player Stats")
+	UPROPERTY(EditAnywhere, Category = "HUD|Player Stats")
 	TSubclassOf<UUserWidget> BlasterOverlayClass;
 
 	UPROPERTY()
 	UBlasterOverlay* Overlay;
 
-	UPROPERTY(EditAnywhere, Category = "Announcements")
+	UPROPERTY(EditAnywhere, Category = "HUD|Announcements")
 	TSubclassOf<UUserWidget> AnnouncementClass;
 	
 	UPROPERTY()
 	UAnnouncementWidget* Announcement;
-
 
 protected:
 	virtual void BeginPlay() override;
@@ -57,10 +60,24 @@ protected:
 private:
 	void DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVector2D Spread, FLinearColor Color);
 
+	UFUNCTION()
+	void ElimAnnouncementTimerFinished(UElimAnnouncement* MsgToRemove);
+
 	FHUDPackage HUDPackage;
 
-	UPROPERTY(EditAnywhere, Category = Crosshair)
+	UPROPERTY(EditAnywhere, Category = "HUD|Crosshair")
 	float CrosshairSpreadMax = 16.f;
+	
+	UPROPERTY(EditAnywhere, Category = "HUD|Announcements")
+	TSubclassOf<UElimAnnouncement> ElimAnnouncementClass;
+
+	APlayerController* PlayerController;
+
+	UPROPERTY(EditAnywhere, Category = "HUD|Announcements")
+	float ElimAnnouncementTime = 5.f;
+
+	UPROPERTY()
+	TArray<UElimAnnouncement*> ElimMessages;
 
 public:
 	FORCEINLINE void SetHUDPackage(const FHUDPackage& Package) { HUDPackage = Package; }

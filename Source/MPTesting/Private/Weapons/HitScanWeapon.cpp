@@ -30,7 +30,8 @@ void AHitScanWeapon::Fire(const FVector& HitTarget)
 		BeamEnd = HitResult.ImpactPoint;
 
 		//DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 5.f, 8.f, FColor::Red, true);
-		ApplyDamageOnHit(Cast<ABlaster>(HitResult.GetActor()), OwnerPawn, Damage, HitResult.TraceStart, HitResult.ImpactPoint);
+		const float DamageToCause = HitResult.BoneName == FName("head") ? GetHeadShotDamage() : GetDamage();
+		ApplyDamageOnHit(Cast<ABlaster>(HitResult.GetActor()), OwnerPawn, DamageToCause, HitResult.TraceStart, HitResult.ImpactPoint);
 		PlayFireImpactEffects(HitResult);
 	}
 	FireBeam(SocketTransform, BeamEnd);
