@@ -28,6 +28,9 @@ public:
 	void SetCarriedAmmo(int32 Ammo);
 	void SetMatchCountdownText(int32 Minutes, int32 Seconds);
 	void SetGrenadesText(int32 Grenades);
+	void SetBlueTeamScore(int32 Score);
+	void SetRedTeamScore(int32 Score);
+	void SetTeamScoreVisibility(bool bIsVisible);
 	void SetHighPingWarningVisible(bool bVisible);
 
 	UPROPERTY(meta = (BindWidget))
@@ -59,6 +62,15 @@ public:
 	
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* GrenadesText;
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* BlueTeamScore;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* RedTeamScore;
+	
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* ScoreSpacer;
 
 	// Opacity is set to 0 by default
 	UPROPERTY(meta = (BindWidget))

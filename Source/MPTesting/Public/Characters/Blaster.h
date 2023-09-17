@@ -7,6 +7,7 @@
 #include "InputActionValue.h"
 #include "Enums/TurningInPlace.h"
 #include "Enums/CombatState.h"
+#include "Enums/Team.h"
 #include "Interfaces/InteractWithCrosshairs.h"
 #include "Components/TimelineComponent.h"
 #include "Blaster.generated.h"
@@ -24,6 +25,7 @@ class UCombatComponent;
 class UBuffComponent;
 class ABlasterController;
 class ABlasterPlayerState;
+class ABlasterGameMode;
 class UBoxComponent;
 class ULagCompensationComponent;
 class UNiagaraSystem;
@@ -91,6 +93,8 @@ public:
 	
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastLostTheLead();
+
+	void SetTeamColor(ETeam InTeam);
 
 	UPROPERTY(Replicated)
 	bool bDisableGameplay = false;
@@ -267,6 +271,9 @@ private:
 	UPROPERTY()
 	ABlasterPlayerState* BlasterPlayerState;
 
+	UPROPERTY()
+	ABlasterGameMode* BlasterGameMode;
+
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	AWeapon* OverlappingWeapon;
 
@@ -356,8 +363,24 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = Elim)
 	UMaterialInstanceDynamic* DynamicDissolveMaterialInstance;
 
-	UPROPERTY(EditAnywhere, Category = Elim)
+	UPROPERTY(VisibleAnywhere, Category = Elim)
 	UMaterialInstance* DissolveMaterialInstance;
+	
+	UPROPERTY(EditAnywhere, Category = Elim)
+	UMaterialInstance* RedDissolveMatInstance;
+	
+	UPROPERTY(EditAnywhere, Category = Elim)
+	UMaterialInstance* BlueDissolveMatInstance;
+	
+	/* For when the player has no team */
+	UPROPERTY(EditAnywhere, Category = Elim)
+	UMaterialInstance* DefaultMaterial;
+	
+	UPROPERTY(EditAnywhere, Category = Elim)
+	UMaterialInstance* RedMaterial;
+	
+	UPROPERTY(EditAnywhere, Category = Elim)
+	UMaterialInstance* BlueMaterial;
 
 	UPROPERTY(EditAnywhere, Category = Elim)
 	UParticleSystem* ElimBotEffect;

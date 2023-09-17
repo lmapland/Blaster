@@ -11,6 +11,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FHighPingDelegate, bool, bPingTooHig
 class ABlasterHUD;
 class UBlasterOverlay;
 class ABlasterGameMode;
+class ABlasterGameState;
+class ABlasterPlayerState;
 class UInputAction;
 class UUserWidget;
 class UReturnToMainMenu;
@@ -37,8 +39,11 @@ public:
 	virtual float GetServerTime();
 	virtual void ReceivedPlayer() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	void OnMatchStateSet(FName State);
+	void OnMatchStateSet(FName State, bool bTeamsMatch = false);
 	void BroadcastElim(APlayerState* Attacker, APlayerState* Victim);
+	void SetTeamScoresVisible(bool IsVisible);
+	void SetHUDRedTeamScore(int32 Score);
+	void SetHUDBlueTeamScore(int32 Score);
 
 	float SingleTripTime = 0.f;
 
@@ -49,7 +54,7 @@ protected:
 	virtual void BeginPlay() override;
 	void SetHUDTime();
 	void PollInit();
-	void HandleMatchHasStarted();
+	void HandleMatchHasStarted(bool bTeamsMatch = false);
 	void HandleCooldown();
 
 	// Sync time between client & server
@@ -65,7 +70,7 @@ protected:
 	void ServerCheckMatchState();
 
 	UFUNCTION(Client, Reliable)
-	void ClientJoinMidgame(FName StateOfMatch, float Warmup, float Match, float StartingTime, float Cooldown);
+	void ClientJoinMidgame(FName StateOfMatch, float Warmup, float Match, float StartingTime, float Cooldown, bool InShouldShowTeamScores);
 
 	void ShowHighPingWarning(bool bShouldShow);
 	void CheckPing(float DeltaTime);
@@ -74,6 +79,12 @@ protected:
 
 	UFUNCTION(Client, Reliable)
 	void ClientElimAnnouncement(APlayerState* Attacker, APlayerState* Victim);
+
+	UFUNCTION()
+	void OnRep_ShowTeamScores();
+
+	FString GetInfoText(const TArray<ABlasterPlayerState*>& InPlayers);
+	FString GetTeamsInfoText(ABlasterGameState* BlasterGameState);
 
 	// Difference between client and server time
 	float ClientServerDelta = 0.f;
@@ -85,7 +96,10 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Controller Properties | Input")
 	UInputAction* QuitAction;
-
+	
+	/* Whether or not the team scores section of the Overlay should be shown. This is a stand-in for whether or not the game is in Teams Mode */
+	UPROPERTY(ReplicatedUsing = OnRep_ShowTeamScores)
+	bool bShowTeamScores = false;
 
 private:
 	UFUNCTION()

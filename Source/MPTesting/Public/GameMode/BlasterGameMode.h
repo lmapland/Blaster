@@ -30,16 +30,21 @@ public:
 	virtual void RequestRespawn(ACharacter* ElimmedCharacter, AController* ElimmedController);
 	void PlayerLeftGame(ABlasterPlayerState* PlayerLeaving);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Game Start")
+	/* Should PlayerOne be able to Damage PlayerTwo? Will depend on Friendly Fire and whether the two players are on the same team */
+	virtual bool PlayerShouldDamage(AController* PlayerOne, AController* PlayerTwo);
+
+	UPROPERTY(EditDefaultsOnly, Category = "Game Mode Properties|Game Start")
 	float WarmupTime = 10.f;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Game Start")
+	UPROPERTY(EditDefaultsOnly, Category = "Game Mode Properties|Game Start")
 	float MatchTime = 120.f;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Game Cooldown")
+	UPROPERTY(EditDefaultsOnly, Category = "Game Mode Properties|Game Cooldown")
 	float CooldownTime = 120.f;
 
 	float LevelStartingTime = 0.f;
+
+	bool bTeamsMatch = false;
 
 protected:
 	virtual void BeginPlay() override;
@@ -50,4 +55,5 @@ private:
 
 public:
 	FORCEINLINE float GetCountdownTime() const { return CountdownTime; }
+	FORCEINLINE bool GetIsTeamsMatch() const { return bTeamsMatch; }
 };

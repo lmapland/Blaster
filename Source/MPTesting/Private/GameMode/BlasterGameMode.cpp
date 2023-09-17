@@ -65,7 +65,7 @@ void ABlasterGameMode::OnMatchStateSet()
 		ABlasterController* CurrentController = Cast<ABlasterController>(*It);
 		if (CurrentController)
 		{
-			CurrentController->OnMatchStateSet(MatchState);
+			CurrentController->OnMatchStateSet(MatchState, bTeamsMatch);
 		}
 	}
 }
@@ -162,4 +162,9 @@ void ABlasterGameMode::PlayerLeftGame(ABlasterPlayerState* PlayerLeaving)
 	{
 		CharacterLeaving->Elim(true);
 	}
+}
+
+bool ABlasterGameMode::PlayerShouldDamage(AController* PlayerOne, AController* PlayerTwo)
+{
+	return true;
 }

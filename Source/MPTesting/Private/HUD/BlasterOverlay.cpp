@@ -91,6 +91,44 @@ void UBlasterOverlay::SetGrenadesText(int32 Grenades)
 	}
 }
 
+void UBlasterOverlay::SetBlueTeamScore(int32 Score)
+{
+	if (BlueTeamScore)
+	{
+		const FString ScoreString = FString::Printf(TEXT("%d"), Score);
+		BlueTeamScore->SetText(FText::FromString(ScoreString));
+	}
+}
+
+void UBlasterOverlay::SetRedTeamScore(int32 Score)
+{
+	if (RedTeamScore)
+	{
+		const FString ScoreString = FString::Printf(TEXT("%d"), Score);
+		RedTeamScore->SetText(FText::FromString(ScoreString));
+	}
+}
+
+void UBlasterOverlay::SetTeamScoreVisibility(bool bIsVisible)
+{
+	if (RedTeamScore && BlueTeamScore && ScoreSpacer)
+	{
+		if (bIsVisible)
+		{
+			RedTeamScore->SetVisibility(ESlateVisibility::Visible);
+			BlueTeamScore->SetVisibility(ESlateVisibility::Visible);
+			ScoreSpacer->SetVisibility(ESlateVisibility::Visible);
+		}
+		else
+		{
+			RedTeamScore->SetVisibility(ESlateVisibility::Hidden);
+			BlueTeamScore->SetVisibility(ESlateVisibility::Hidden);
+			ScoreSpacer->SetVisibility(ESlateVisibility::Hidden);
+
+		}
+	}
+}
+
 void UBlasterOverlay::SetHighPingWarningVisible(bool bVisible)
 {
 	if (HighPingImage && HighPingAnimation)
